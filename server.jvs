@@ -10,6 +10,7 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.io.PrintWriter;
 import java.awt.image.*;
+import java.awt.*;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageWriter;
 import javax.imageio.stream.*;
@@ -30,17 +31,39 @@ public class Serveur extends Thread {
 	Serveur() {
 		// Mise en place de l'interface graphique
 		fenetre = new JFrame();
-		fenetre.setVisible(true);fenetre.setSize(400, 100);
+		fenetre.setSize(400, 100);
 		fenetre.setLocationRelativeTo(null);
 		fenetre.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+
+		fenetre.getContentPane().setLayout(new BorderLayout());		
+		JPanel content = new JPanel();		
+		content.setLayout(new GridBagLayout());	
+		
+		GridBagConstraints gbc = new GridBagConstraints();
+		gbc.gridx = 0;
+		gbc.gridy = 0;
+		gbc.fill = GridBagConstraints.HORIZONTAL;
+		gbc.insets = new Insets(10, 10, 10, 10);
+   		content.add(new JTextField("Wesh"), gbc);
+   		gbc.gridx = 1;
+		gbc.gridy = 0;
+		gbc.gridheight = 1;
+		gbc.gridwidth = 2;
+		content.add(new JButton("wsh"), gbc);
+		
+		fenetre.getContentPane().add(content, BorderLayout.NORTH);
+		fenetre.setVisible(true);
+		
 		// Tentative de créer le serveur avec ouverture d'1 port
 		try {
-		
 			socketserver = new ServerSocket(port);
 			System.out.println("Le serveur est à l'écoute du port "+socketserver.getLocalPort());
-
+			fenetre.setTitle("Serveur en ligne sur  " + +socketserver.getLocalPort());
 		 // Si y a une érreur on la récupère
-		}catch (IOException e) {}
+		}catch (IOException e)
+		{
+			fenetre.setTitle("Serveur hors ligne");
+		}
 	}
 
 	// Fonction principale permettant d'afficher les msg reçus

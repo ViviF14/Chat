@@ -14,17 +14,18 @@ public class client extends Thread
 	private String host = "localhost";
 	private BufferedReader in;
 	private PrintWriter out;
+	public boolean connected = false;
 
 	client()
 	{
 		try
 		{
 			socket = new Socket(host, port);
+			connected = true;
+			
 		}
 		catch(IOException e)
-		{
-			println(e);
-		}
+		{}
 	}
 
 	public void run()
@@ -108,9 +109,16 @@ public class send extends Thread
 
 void main()
 {
-	client a = new client();
-	send b = new send(a);
-	//a.start();
-	b.start();
+	client socketClient = new client();
+	if(socketClient.connected)
+	{
+		send clientEnvoie = new send(socketClient);
+		//a.start();
+		clientEnvoie.start();
+	}
+	else
+	{
+		println("Erreur lors de la connexion");
+	}
 	
 }
