@@ -1,0 +1,106 @@
+
+// Import de package
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.UnknownHostException;
+import java.io.PrintWriter;
+import java.awt.image.*;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageWriter;
+import javax.imageio.stream.*;
+import java.io.*;
+import javax.swing.*;
+
+// Création de notre classe dérivant de la classe Thread
+public class Serveur extends Thread {
+
+	// déclaration de variable de classe 
+	private ServerSocket socketserver ;
+	private Socket socketduserveur;
+	private BufferedReader in;
+	private PrintWriter out;
+	private int port = 12015;
+	private JFrame fenetre; 
+	
+	Serveur() {
+		// Mise en place de l'interface graphique
+		fenetre = new JFrame();
+		fenetre.setVisible(true);fenetre.setSize(400, 100);
+		fenetre.setLocationRelativeTo(null);
+		fenetre.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+		// Tentative de créer le serveur avec ouverture d'1 port
+		try {
+		
+			socketserver = new ServerSocket(port);
+			System.out.println("Le serveur est à l'écoute du port "+socketserver.getLocalPort());
+
+		 // Si y a une érreur on la récupère
+		}catch (IOException e) {}
+	}
+
+	// Fonction principale permettant d'afficher les msg reçus
+	//et de connecter les utilisateurs
+	public void run()
+	{				
+		try {
+			while(true)
+			{
+				// Quelqu'un se connecte
+				socketduserveur = socketserver.accept(); 
+				System.out.println(socketduserveur.getInetAddress().toString() + ":" + socketduserveur.getPort() + " est connecté");
+				while(true)
+				{
+					in = new BufferedReader(new InputStreamReader(socketduserveur.getInputStream()));
+					String msg = in.readLine();
+
+					if (msg.equals("close"))
+					{
+						println("Fermeture connexion");
+						fenetre.setVisible(false); //you can't see me!
+						fenetre.dispose();
+						break;
+					}
+					else if(msg.equals("IMG"))
+					{
+
+						BufferedImage image = ImageIO.read(socketduserveur.getInputStream());
+						File outputfile = new File("image.png");
+						ImageIO.write(image, "png", outputfile);
+						in = new BufferedReader(new InputStreamReader(socketduserveur.getInputStream()));
+						String trash = in.readLine();
+						println("did");
+						JLabel img = new JLabel( new ImageIcon("IPWD.png"));
+						JPanel pan = new JPanel();
+						pan.add(img);
+						fenetre.setContentPane(pan);
+						fenetre.revalidate();
+						println("Affichée");
+											
+					}
+					else if(msg != null)
+					println(msg);
+					
+				}
+				break;
+			}
+			socketduserveur.close();
+	        	socketserver.close();		                
+	        
+		 }catch (IOException e)		 
+		 {
+			e.printStackTrace();
+		}
+	}
+
+}
+
+void main()
+{
+	Serveur a = new Serveur();
+	a.start();
+}

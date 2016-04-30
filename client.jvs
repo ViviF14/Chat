@@ -1,0 +1,116 @@
+
+import java.net.*;
+import java.io.*;
+import java.lang.*;
+import java.awt.image.*;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageWriter;
+import javax.imageio.stream.*;
+
+public class client extends Thread
+{
+	public Socket socket;
+	private int port = 12015;
+	private String host = "localhost";
+	private BufferedReader in;
+	private PrintWriter out;
+
+	client()
+	{
+		try
+		{
+			socket = new Socket(host, port);
+		}
+		catch(IOException e)
+		{
+			println(e);
+		}
+	}
+
+	public void run()
+	{
+		println("Launched");
+		while(true)
+		{
+			try
+			{
+				in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+				String msg = in.readLine();
+				if(msg != null)
+				{
+					println(msg);
+				}
+			}
+			catch(IOException e)
+			{
+				
+			}
+		}
+	}
+
+
+}
+
+public class send extends Thread
+{
+	private client socket;
+	private OutputStream out;
+	private PrintWriter outtext;
+
+	send(client client)
+	{
+		this.socket = client;
+	}
+
+	public void run()
+	{
+		boolean a = true;
+		while(a)
+		{
+			try
+			{
+				String toSend = readString("Message");
+				if(toSend.equals(""))
+				{
+					a = false;
+					outtext = new PrintWriter(socket.socket.getOutputStream());
+					outtext.print("close");
+					outtext.flush();
+					socket.socket.close();		
+				}
+				else if(toSend.equals("IMG"))
+				{
+					outtext = new PrintWriter(socket.socket.getOutputStream());
+					outtext.println("IMG");
+					outtext.flush();
+					out = socket.socket.getOutputStream();
+					BufferedImage image = ImageIO.read(new File("acab.png"));
+					ImageIO.write(image , "PNG", out);
+					out.flush();
+					outtext = new PrintWriter(socket.socket.getOutputStream());
+					outtext.println("Nettoyage");
+					outtext.flush();
+				}
+				else
+				{
+					outtext = new PrintWriter(socket.socket.getOutputStream());
+					outtext.println(toSend);
+					outtext.flush();
+				}
+			}
+			catch
+			(IOException e){}
+			
+		}
+	}
+	
+}
+
+void main()
+{
+	client a = new client();
+	send b = new send(a);
+	//a.start();
+	b.start();
+	
+}
