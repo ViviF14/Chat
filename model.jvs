@@ -17,7 +17,6 @@ import javax.imageio.stream.*;
 import java.io.*;
 import javax.swing.*;
 import javax.swing.text.*;
-import javax.swing.text.html.*;
 import java.awt.event.*;
 
 
@@ -32,14 +31,15 @@ public class Serveur extends Thread implements ActionListener
 	private JFrame fenetre; 
 	private JTextPane textArea;
 	private JButton deconnexion;
+	private JTextField jtfPort;
 	private JButton fileInput;
-	private String host;
-	private int port = 12001;
+	private boolean isLaunched = false;
 	
 	Serveur() {
 		// Mise en place de l'interface graphique
 		fenetre = new JFrame();
 		fenetre.setSize(600, 600);
+		fenetre.setResizable(false);
 		fenetre.setTitle("Serveur");
 		fenetre.setLocationRelativeTo(null);
 		fenetre.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
@@ -49,10 +49,13 @@ public class Serveur extends Thread implements ActionListener
 		content.setLayout(new GridBagLayout());	
 		// Créations des widgets
 		JLabel labelIP = new JLabel("Adrrese IP du serveur");
-		getHost();
-		JLabel IP = new JLabel(host);
 		JLabel labelPort = new JLabel("Port du serveur");
-		JLabel PORT = new JLabel(Integer.toString(port));
+		JTextField jtfIP = new JTextField("");
+		jtfPort = new JTextField("12000");
+		jtfIP.setPreferredSize(new Dimension(110, 25));
+		jtfPort.setPreferredSize(new Dimension(45, 25));
+		JButton connexion = new JButton("Connexion");
+		connexion.addActionListener(this);
 		// Ajout des widgets
 		GridBagConstraints gbc = new GridBagConstraints();
 		gbc.gridx = 0;
@@ -61,15 +64,15 @@ public class Serveur extends Thread implements ActionListener
 		gbc.insets = new Insets(10, 10, 10, 10);
    		content.add(labelIP, gbc);
    		gbc.gridx = 1;
-   		content.add(IP, gbc);
+   		content.add(jtfIP, gbc);
    		gbc.gridx = 2;
    		content.add(labelPort, gbc);
    		gbc.gridx = 3;
-   		content.add(PORT, gbc);
+   		content.add(jtfPort, gbc);
+   		gbc.gridx = 4;
+		content.add(connexion, gbc);
 		//-------- Création de l'affichage -----------
 		textArea = new JTextPane();
-		textArea.setContentType("text/html");
-		textArea.setText("<html>");
 		textArea.setEditable(false);
 		JScrollPane scroll = new JScrollPane(textArea);
 		//------- Création de l'entrée utilisateur ---
@@ -77,6 +80,7 @@ public class Serveur extends Thread implements ActionListener
 		userIN.setLayout(new GridBagLayout());
 		// Création des widgets
 		deconnexion = new JButton("Déconnexion");
+		deconnexion.addActionListener(this);
 		fileInput = new JButton("Envoyer une image");
 		fileInput.addActionListener(this);
 		JButton send = new JButton("Envoyer");
@@ -103,14 +107,15 @@ public class Serveur extends Thread implements ActionListener
 		fenetre.getContentPane().add(scroll, BorderLayout.CENTER);
 		fenetre.getContentPane().add(userIN, BorderLayout.SOUTH);
 		fenetre.setVisible(true);
-
-		serveurInitialisation();		
+		
 	}
 
 	// Fonction principale permettant d'afficher les msg reçus
 	//et de connecter les utilisateurs
 	public void run()
-	{						
+	{	
+		println("lauched");
+					
 		try {
 			while(true)
 			{
@@ -137,24 +142,22 @@ public class Serveur extends Thread implements ActionListener
 						ImageIO.write(image, "png", outputfile);
 						in = new BufferedReader(new InputStreamReader(socketduserveur.getInputStream()));
 						String trash = in.readLine();
-						HTMLDocument doc = (HTMLDocument) textArea.getStyledDocument();
-						String data = "<img src=\"file:///"+outputfile.getAbsolutePath()+"\" alt='emoji_prayer'><br />";
-				
-						try
-						{
-							doc.insertAfterEnd(doc.getCharacterElement(doc.getLength()), data);
-						}
-						catch(BadLocationException e){}
-						catch(IOException e){};	
-						
+						println("did");
+						JLabel img = new JLabel( new ImageIcon("IPWD.png"));
+						JPanel pan = new JPanel();
+						pan.add(img);
+						fenetre.setContentPane(pan);
+						fenetre.revalidate();
+						println("Affichée");
 											
 					}
 					else if(msg != null)
 					{
+						println(msg);
 						StyledDocument doc = textArea.getStyledDocument();
 						try
 						{
-							doc.insertString(doc.getLength(), msg +"\n", null);
+							doc.insertString(doc.getLength(), "test\n", null);
 						}
 						catch(BadLocationException e){}						
 						
@@ -173,13 +176,14 @@ public class Serveur extends Thread implements ActionListener
 	}
 
 	// Fonction qui initialise le serveur
-	public void serveurInitialisation()
+	public void serveurInitialisation(int port)
 	{
 		// Tentative de créer le serveur avec ouverture d'1 port
 		try {
 			socketserver = new ServerSocket(port);
 			System.out.println("Le serveur est à l'écoute du port "+socketserver.getLocalPort());
 			fenetre.setTitle("Serveur en ligne sur  " + +socketserver.getLocalPort());
+			isLaunched = true;
 		 // Si y a une érreur on la récupère
 		}catch (IOException e)
 		{
@@ -190,34 +194,33 @@ public class Serveur extends Thread implements ActionListener
 	// Fonction qui attend un click sur un boutton
 	public void actionPerformed(ActionEvent arg0)
 	{
-		if(arg0.getActionCommand().equals("Envoyer une image"))
+		if(arg0.getActionCommand().equals("Connexion"))
 		{
-			JFileChooser fileChooser = new JFileChooser();
-			if (fileChooser.showOpenDialog(fileChooser) == JFileChooser.APPROVE_OPTION)
+			try
 			{
-				File file = fileChooser.getSelectedFile();
-				HTMLDocument doc = (HTMLDocument) textArea.getStyledDocument();
-				String data = "<img src=\"file:///"+file.toString()+"\" alt='emoji_prayer'><br />";
-
-				try
-				{
-					doc.insertAfterEnd(doc.getCharacterElement(doc.getLength()), data);
-				}
-				catch(BadLocationException e){}
-				catch(IOException e){};		
-			  
+				int port = Integer.parseInt(jtfPort.getText());
+				if(port <= 0 || port > 65535)
+				println("Erreur");
+				else
+				serveurInitialisation(port);
+			}
+			catch(Exception e)
+			{
+				println("Erreur doit être un entier ");
 			}
 		}
-	}
-
-	// Fonction qui trouve l'adresse IP de la machine
-	public void getHost()
-	{
-		try
+		else if(arg0.getActionCommand().equals("Envoyer une image"))
 		{
-			host = InetAddress.getLocalHost().toString();
+			JFileChooser fileChooser = new JFileChooser();
+			if (fileChooser.showOpenDialog(fileChooser) == JFileChooser.APPROVE_OPTION) {
+			  File file = fileChooser.getSelectedFile();
+			  println(file.toString());
+			}
 		}
-		catch(UnknownHostException e){}
+		else
+		{
+			println(arg0.getActionCommand());
+		}
 		
 	}
 

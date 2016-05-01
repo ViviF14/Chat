@@ -1,0 +1,21 @@
+
+public class test
+{
+	private String test = "test";
+
+	public void display()
+	{
+		println(test);
+	}
+
+	public void main()
+	{
+		println("coucou");
+		display();
+	}
+}
+
+void main()
+{
+	print("cc");
+}
