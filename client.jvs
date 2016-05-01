@@ -1,126 +1,333 @@
 
-import java.net.*;
-import java.io.*;
-import java.lang.*;
+// Import de package
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.UnknownHostException;
+import java.io.PrintWriter;
 import java.awt.image.*;
+import java.awt.*;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageWriter;
 import javax.imageio.stream.*;
+import java.io.*;
+import javax.swing.*;
+import javax.swing.text.*;
+import javax.swing.text.html.*;
+import java.awt.event.*;
 
-public class client extends Thread
+public class client extends Thread implements ActionListener, KeyListener, WindowListener  
 {
 	public Socket socket;
-	private int port = 12001;
-	private String host = "localhost";
+	private int port;
+	private String us;
+	private String host;
 	private BufferedReader in;
 	private PrintWriter out;
+	private JFrame fenetre; 
+	private JTextPane textArea;
+	private JButton deconnexion;
+	private JButton connexion;
+	private JButton fileInput;
+	private HTMLDocument doc;
+	private JButton send;
+	private JTextArea userText;
+	private JTextField jtfPort;
+	private JTextField jtfIP;
 	public boolean connected = false;
+	private OutputStream o;
 
 	client()
 	{
-		try
-		{
-			socket = new Socket(host, port);
-			connected = true;
-			
-		}
-		catch(IOException e)
-		{}
+		// Mise en place de l'interface graphique
+		fenetre = new JFrame();
+		fenetre.addWindowListener(this);
+		fenetre.setSize(600, 600);
+		fenetre.setResizable(false);
+		fenetre.setTitle("Serveur");
+		fenetre.setLocationRelativeTo(null);
+		fenetre.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+		fenetre.getContentPane().setLayout(new BorderLayout());
+		getHost();	
+		//------- Création du header -------------------	
+		JPanel content = new JPanel();		
+		content.setLayout(new GridBagLayout());	
+		// Créations des widgets
+		JLabel labelIP = new JLabel("Adrrese IP du serveur");
+		JLabel labelPort = new JLabel("Port du serveur");
+		jtfIP = new JTextField("localhost");
+		jtfPort = new JTextField("12000");
+		jtfIP.setPreferredSize(new Dimension(110, 25));
+		jtfPort.setPreferredSize(new Dimension(45, 25));
+		 connexion = new JButton("Connexion");
+		connexion.addActionListener(this);
+		// Ajout des widgets
+		GridBagConstraints gbc = new GridBagConstraints();
+		gbc.gridx = 0;
+		gbc.gridy = 0;
+		gbc.fill = GridBagConstraints.HORIZONTAL;
+		gbc.insets = new Insets(10, 10, 10, 10);
+   		content.add(labelIP, gbc);
+   		gbc.gridx = 1;
+   		content.add(jtfIP, gbc);
+   		gbc.gridx = 2;
+   		content.add(labelPort, gbc);
+   		gbc.gridx = 3;
+   		content.add(jtfPort, gbc);
+   		gbc.gridx = 4;
+		content.add(connexion, gbc);
+		//-------- Création de l'affichage -----------
+		textArea = new JTextPane();
+		textArea.setContentType("text/html");
+		textArea.setEditable(false);
+		JScrollPane scroll = new JScrollPane(textArea);
+		//------- Création de l'entrée utilisateur ---
+		JPanel userIN = new JPanel();
+		userIN.setLayout(new GridBagLayout());
+		// Création des widgets
+		deconnexion = new JButton("Déconnexion");
+		deconnexion.addActionListener(this);
+		deconnexion.setEnabled(false);
+		fileInput = new JButton("Envoyer une image");
+		fileInput.addActionListener(this);
+		fileInput.setEnabled(false);
+		send = new JButton("Envoyer");
+		send.setEnabled(false);
+		send.addActionListener(this);
+		JButton clean = new JButton("Nettoyer");
+		clean.addActionListener(this);
+		userText = new JTextArea(5, 20);
+		// Ajout des widgets
+		GridBagConstraints gbcUser = new GridBagConstraints();
+		gbcUser.gridx = 0;
+		gbcUser.gridy = 0;
+		gbcUser.fill = GridBagConstraints.HORIZONTAL;
+		gbcUser.insets = new Insets(10, 10, 10, 10);
+		userIN.add(deconnexion, gbcUser);	
+		gbcUser.gridx = 1;
+		userIN.add(fileInput, gbcUser);
+		gbcUser.gridx = 2;	
+		userIN.add(send, gbcUser);
+		gbcUser.gridx = 3;	
+		userIN.add(clean, gbcUser);
+		gbcUser.insets = new Insets(0, 10, 10, 10);
+		gbcUser.gridy = 1;
+		gbcUser.gridx = 0;
+		gbcUser.weightx = 1.0;	
+		gbcUser.gridwidth = 4;
+		userIN.add(userText, gbcUser);	
+		
+		fenetre.getContentPane().add(content, BorderLayout.NORTH);
+		fenetre.getContentPane().add(scroll, BorderLayout.CENTER);
+		fenetre.getContentPane().add(userIN, BorderLayout.SOUTH);
+		fenetre.setVisible(true);	
+
 	}
 
 	public void run()
 	{
-		println("Launched");
+		String userIP = socket.getLocalAddress().toString();
+		String userPort = Integer.toString(socket.getPort());
+		String userHeader = "<font color='#FF0000' ><b>" + userIP+"</b></font> : ";
+		
 		while(true)
 		{
 			try
 			{
 				in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 				String msg = in.readLine();
-				if(msg != null)
-				{
-					println(msg);
-				}
+				write(userHeader + msg + "<br />");
 			}
-			catch(IOException e)
+		 	catch (IOException e)		 
 			{
-				
-			}
-		}
+				e.printStackTrace();
+			}			
+		}			
 	}
 
-
-}
-
-public class send extends Thread
-{
-	private client socket;
-	private OutputStream out;
-	private PrintWriter outtext;
-	private String us;
-
-	send(client client)
+	// Fonction qui envoie un msg au client
+	public void send()
 	{
-		this.socket = client;
-	}
-
-	public void run()
-	{
-		boolean a = true;
-		while(a)
+		String data =  userText.getText();
+		try
 		{
-			try
+
+			if(data.equals("IMG"))
 			{
-				String toSend = readString("Message");
-				if(toSend.equals(""))
-				{
-					a = false;
-					outtext = new PrintWriter(socket.socket.getOutputStream());
-					outtext.print("close");
-					outtext.flush();
-					socket.socket.close();		
-				}
-				else if(toSend.equals("IMG"))
-				{
-					outtext = new PrintWriter(socket.socket.getOutputStream());
-					outtext.println("IMG");
-					outtext.flush();
-					out = socket.socket.getOutputStream();
-					BufferedImage image = ImageIO.read(new File("acab.png"));
-					ImageIO.write(image , "PNG", out);
-					out.flush();
-					outtext = new PrintWriter(socket.socket.getOutputStream());
-					outtext.println("Nettoyage");
-					outtext.flush();
-				}
-				else
-				{
-					outtext = new PrintWriter(socket.socket.getOutputStream());
-					outtext.println(toSend + "<br />");
-					outtext.flush();
-				}
+				out = new PrintWriter(socket.getOutputStream());
+				out.println("IMG");
+				out.flush();
+				o = socket.getOutputStream();
+				BufferedImage image = ImageIO.read(new File("acab.png"));
+				ImageIO.write(image , "PNG", o);
+				o.flush();
+				out = new PrintWriter(socket.getOutputStream());
+				out.println("Nettoyage");
+				out.flush();
+				userText.setText("");
 			}
-			catch
-			(IOException e){}
+			else
+			{
+				out = new PrintWriter(socket.getOutputStream());
+				write("<b>"+us+"</b> : " + data+ "<br />\n");
+				out.println(data);
+				out.flush();
+				userText.setText("");
+			}		
 			
 		}
+		catch(IOException e){
+			println("erreur");}
 	}
 
-	
+	// Fonction qui permet la connexion au serveur
+	public void connexion()
+	{
+		String host = jtfIP.getText();
+		try
+		{
+			port = Integer.parseInt(jtfPort.getText());
+			if(port >= 0 && port < 65535 )
+			{
+				try
+				{
+					socket = new Socket(host, port);
+					connected = true;	
+					deconnexion.setEnabled(true);
+					send.setEnabled(true);
+					fileInput.setEnabled(true);
+					connexion.setEnabled(false);
+					this.start();
+				}
+				catch(IOException e)
+				{
+					println(e);
+					println("Erreur");
+				}
+			}
+			else
+			{
+				println("Port doit etre entre 0 et 65535 -> " + Integer.toString(port) );
+			}
+		}
+		catch(Exception e)
+		{
+			println("Erreur doit être un entier ");
+		}
+	}
+
+	// Fonction qui inscrit des données dans la zone
+	public void write(String data)
+	{
+		HTMLDocument doc = (HTMLDocument) textArea.getStyledDocument();
+		try
+		{
+			doc.insertAfterEnd(doc.getCharacterElement(doc.getLength()), data+"\n");
+		}
+		catch(BadLocationException e){println(e);}
+		catch(IOException e){println(e);}
+	}
+
+	// Fonction qui attend un click sur un boutton
+	public void actionPerformed(ActionEvent arg0)
+	{
+		if(arg0.getActionCommand().equals("Envoyer une image"))
+		{
+			JFileChooser fileChooser = new JFileChooser();
+			if (fileChooser.showOpenDialog(fileChooser) == JFileChooser.APPROVE_OPTION)
+			{
+				File file = fileChooser.getSelectedFile();
+				HTMLDocument doc = (HTMLDocument) textArea.getStyledDocument();
+				String data = "<img src=\"file:///"+file.toString()+"\"><br />";
+				write(data);			  
+			}
+		}
+		else if(arg0.getActionCommand().equals("Envoyer"))
+		{
+			send();			
+		}
+		else if(arg0.getActionCommand().equals("Connexion"))
+		{
+			connexion();
+		}
+		else if(arg0.getActionCommand().equals("Déconnexion"))
+		{
+			deconnexion();
+		}
+		else if(arg0.getActionCommand().equals("Nettoyer"))
+		{
+			clean();
+		}
+	}
+
+	// Fonction de déconnexion
+	public void deconnexion()
+	{
+		try
+		{
+			deconnexion.setEnabled(false);
+			send.setEnabled(false);
+			fileInput.setEnabled(false);
+			connexion.setEnabled(true);
+			out = new PrintWriter(socket.getOutputStream());
+			out.println("close");
+			out.flush();
+			socket.close();
+		}catch(IOException e){}
+	}
+
+	// Fonctions qui récuper les touches du clavier
+	public void keyReleased(KeyEvent e)
+	{
+	}
+
+	public void keyPressed(KeyEvent e)
+	{
+		if(e.getKeyCode() == KeyEvent.VK_ENTER)
+		{
+			send();
+		}
+	}
+
+	public void keyTyped(KeyEvent e)
+	{
+	}
+
+	// Fonctions qui surveille l'état de la fenetre
+	public void windowActivated(java.awt.event.WindowEvent e) {}
+	public void windowClosed(java.awt.event.WindowEvent e) {}
+	public void windowClosing(java.awt.event.WindowEvent e) {deconnexion();}
+	public void windowDeactivated(java.awt.event.WindowEvent e) {}
+	public void windowDeiconified(java.awt.event.WindowEvent e) {}
+	public void windowIconified(java.awt.event.WindowEvent e) {}
+	public void windowOpened(java.awt.event.WindowEvent e) {}
+
+	// Fonction qui trouve l'adresse IP de la machine
+	public void getHost()
+	{
+		try
+		{
+			us = InetAddress.getLocalHost().toString();
+		}
+		catch(UnknownHostException e){}
+		
+	}
+
+	// Nettoyage de l'écran
+	public void clean()
+	{
+		textArea.setText("");
+	}
+
+
+
 }
 
 void main()
 {
 	client socketClient = new client();
-	if(socketClient.connected)
-	{
-		send clientEnvoie = new send(socketClient);
-		//a.start();
-		clientEnvoie.start();
-	}
-	else
-	{
-		println("Erreur lors de la connexion");
-	}
-	
 }
