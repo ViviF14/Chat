@@ -35,6 +35,7 @@ public class Serveur extends Thread implements ActionListener
 	private JButton fileInput;
 	private String host;
 	private int port = 12001;
+	private HTMLDocument doc;
 	
 	Serveur() {
 		// Mise en place de l'interface graphique
@@ -71,6 +72,8 @@ public class Serveur extends Thread implements ActionListener
 		textArea.setContentType("text/html");
 		textArea.setText("<html>");
 		textArea.setEditable(false);
+		Font font = new Font("Serif", Font.ITALIC, 45);
+		textArea.setFont(font);
 		JScrollPane scroll = new JScrollPane(textArea);
 		//------- Création de l'entrée utilisateur ---
 		JPanel userIN = new JPanel();
@@ -98,7 +101,7 @@ public class Serveur extends Thread implements ActionListener
 		gbcUser.weightx = 1.0;	
 		gbcUser.gridwidth = 4;
 		userIN.add(userText, gbcUser);	
-		
+		//------ Ajout des panels sur le layout principal -----
 		fenetre.getContentPane().add(content, BorderLayout.NORTH);
 		fenetre.getContentPane().add(scroll, BorderLayout.CENTER);
 		fenetre.getContentPane().add(userIN, BorderLayout.SOUTH);
@@ -116,7 +119,7 @@ public class Serveur extends Thread implements ActionListener
 			{
 				// Quelqu'un se connecte
 				socketduserveur = socketserver.accept(); 
-				System.out.println(socketduserveur.getInetAddress().toString() + ":" + socketduserveur.getPort() + " est connecté");
+				System.out.println(socketduserveur.toString());
 				while(true)
 				{
 					in = new BufferedReader(new InputStreamReader(socketduserveur.getInputStream()));
@@ -137,7 +140,7 @@ public class Serveur extends Thread implements ActionListener
 						ImageIO.write(image, "png", outputfile);
 						in = new BufferedReader(new InputStreamReader(socketduserveur.getInputStream()));
 						String trash = in.readLine();
-						HTMLDocument doc = (HTMLDocument) textArea.getStyledDocument();
+						doc = (HTMLDocument) textArea.getStyledDocument();
 						String data = "<img src=\"file:///"+outputfile.getAbsolutePath()+"\" alt='emoji_prayer'><br />";
 				
 						try
@@ -151,10 +154,10 @@ public class Serveur extends Thread implements ActionListener
 					}
 					else if(msg != null)
 					{
-						StyledDocument doc = textArea.getStyledDocument();
+						doc = (HTMLDocument) textArea.getStyledDocument();
 						try
 						{
-							doc.insertString(doc.getLength(), msg +"\n", null);
+							doc.insertAfterEnd(doc.getCharacterElement(doc.getLength()), msg);
 						}
 						catch(BadLocationException e){}						
 						
@@ -197,11 +200,11 @@ public class Serveur extends Thread implements ActionListener
 			{
 				File file = fileChooser.getSelectedFile();
 				HTMLDocument doc = (HTMLDocument) textArea.getStyledDocument();
-				String data = "<img src=\"file:///"+file.toString()+"\" alt='emoji_prayer'><br />";
+				String data = "<img src=\"file:///"+file.toString()+"\"><br />";
 
 				try
 				{
-					doc.insertAfterEnd(doc.getCharacterElement(doc.getLength()), data);
+					doc.insertAfterEnd(doc.getCharacterElement(doc.getLength()), data+"\n");
 				}
 				catch(BadLocationException e){}
 				catch(IOException e){};		

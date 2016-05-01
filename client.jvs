@@ -57,6 +57,7 @@ public class send extends Thread
 	private client socket;
 	private OutputStream out;
 	private PrintWriter outtext;
+	private String us;
 
 	send(client client)
 	{
@@ -95,7 +96,7 @@ public class send extends Thread
 				else
 				{
 					outtext = new PrintWriter(socket.socket.getOutputStream());
-					outtext.println(toSend);
+					outtext.println(toSend + "<br />");
 					outtext.flush();
 				}
 			}
@@ -104,6 +105,7 @@ public class send extends Thread
 			
 		}
 	}
+
 	
 }
 
