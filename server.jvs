@@ -16,54 +16,93 @@ import javax.imageio.ImageWriter;
 import javax.imageio.stream.*;
 import java.io.*;
 import javax.swing.*;
+import java.awt.event.*;
 
 // Création de notre classe dérivant de la classe Thread
-public class Serveur extends Thread {
-
+public class Serveur extends Thread implements ActionListener
+{
 	// déclaration de variable de classe 
 	private ServerSocket socketserver ;
 	private Socket socketduserveur;
 	private BufferedReader in;
 	private PrintWriter out;
-	private int port = 12015;
 	private JFrame fenetre; 
+	private JTextArea textArea;
+	private JButton deconnexion;
+	private JTextField jtfPort;
 	
 	Serveur() {
 		// Mise en place de l'interface graphique
 		fenetre = new JFrame();
-		fenetre.setSize(400, 100);
+		fenetre.setSize(600, 600);
+		fenetre.setResizable(false);
+		fenetre.setTitle("Serveur");
 		fenetre.setLocationRelativeTo(null);
 		fenetre.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
-
-		fenetre.getContentPane().setLayout(new BorderLayout());		
+		fenetre.getContentPane().setLayout(new BorderLayout());	
+		//------- Création du header -------------------	
 		JPanel content = new JPanel();		
 		content.setLayout(new GridBagLayout());	
-		
+		// Créations des widgets
+		JLabel labelIP = new JLabel("Adrrese IP du serveur");
+		JLabel labelPort = new JLabel("Port du serveur");
+		JTextField jtfIP = new JTextField("");
+		jtfPort = new JTextField("");
+		jtfIP.setPreferredSize(new Dimension(110, 25));
+		jtfPort.setPreferredSize(new Dimension(40, 25));
+		JButton connexion = new JButton("Connexion");
+		connexion.addActionListener(this);
+		// Ajout des widgets
 		GridBagConstraints gbc = new GridBagConstraints();
 		gbc.gridx = 0;
 		gbc.gridy = 0;
 		gbc.fill = GridBagConstraints.HORIZONTAL;
 		gbc.insets = new Insets(10, 10, 10, 10);
-   		content.add(new JTextField("Wesh"), gbc);
+   		content.add(labelIP, gbc);
    		gbc.gridx = 1;
-		gbc.gridy = 0;
-		gbc.gridheight = 1;
-		gbc.gridwidth = 2;
-		content.add(new JButton("wsh"), gbc);
+   		content.add(jtfIP, gbc);
+   		gbc.gridx = 2;
+   		content.add(labelPort, gbc);
+   		gbc.gridx = 3;
+   		content.add(jtfPort, gbc);
+   		gbc.gridx = 4;
+		content.add(connexion, gbc);
+		//-------- Création de l'affichage -----------
+		textArea = new JTextArea();
+		textArea.setEditable(false);
+		JScrollPane scroll = new JScrollPane(textArea);
+		//------- Création de l'entrée utilisateur ---
+		JPanel userIN = new JPanel();
+		userIN.setLayout(new GridBagLayout());
+		// Création des widgets
+		deconnexion = new JButton("Déconnexion");
+		deconnexion.addActionListener(this);
+		JButton fileInput = new JButton("Envoyer une image");
+		JButton send = new JButton("Envoyer");
+		JTextArea userText = new JTextArea(5, 20);
+		// Ajout des widgets
+		GridBagConstraints gbcUser = new GridBagConstraints();
+		gbcUser.gridx = 0;
+		gbcUser.gridy = 0;
+		gbcUser.fill = GridBagConstraints.HORIZONTAL;
+		gbcUser.insets = new Insets(10, 10, 10, 10);
+		userIN.add(deconnexion, gbcUser);	
+		gbcUser.gridx = 1;
+		userIN.add(fileInput, gbcUser);
+		gbcUser.gridx = 2;	
+		userIN.add(send, gbcUser);
+		gbcUser.insets = new Insets(0, 10, 10, 10);
+		gbcUser.gridy = 1;
+		gbcUser.gridx = 0;
+		gbcUser.weightx = 1.0;	
+		gbcUser.gridwidth = 4;
+		userIN.add(userText, gbcUser);	
 		
 		fenetre.getContentPane().add(content, BorderLayout.NORTH);
+		fenetre.getContentPane().add(scroll, BorderLayout.CENTER);
+		fenetre.getContentPane().add(userIN, BorderLayout.SOUTH);
 		fenetre.setVisible(true);
 		
-		// Tentative de créer le serveur avec ouverture d'1 port
-		try {
-			socketserver = new ServerSocket(port);
-			System.out.println("Le serveur est à l'écoute du port "+socketserver.getLocalPort());
-			fenetre.setTitle("Serveur en ligne sur  " + +socketserver.getLocalPort());
-		 // Si y a une érreur on la récupère
-		}catch (IOException e)
-		{
-			fenetre.setTitle("Serveur hors ligne");
-		}
 	}
 
 	// Fonction principale permettant d'afficher les msg reçus
@@ -106,7 +145,7 @@ public class Serveur extends Thread {
 											
 					}
 					else if(msg != null)
-					println(msg);
+					textArea.append(msg + "\n");
 					
 				}
 				break;
@@ -118,6 +157,46 @@ public class Serveur extends Thread {
 		 {
 			e.printStackTrace();
 		}
+	}
+
+	// Fonction qui initialise le serveur
+	public void serveurInitialisation(int port)
+	{
+		// Tentative de créer le serveur avec ouverture d'1 port
+		try {
+			socketserver = new ServerSocket(port);
+			System.out.println("Le serveur est à l'écoute du port "+socketserver.getLocalPort());
+			fenetre.setTitle("Serveur en ligne sur  " + +socketserver.getLocalPort());
+		 // Si y a une érreur on la récupère
+		}catch (IOException e)
+		{
+			fenetre.setTitle("Serveur hors ligne");
+		}
+	}
+
+	// Funcion qui attend un click sur un boutton
+	public void actionPerformed(ActionEvent arg0)
+	{
+		if(arg0.getActionCommand().equals("Connexion"))
+		{
+			try
+			{
+				int port = Integer.parseInt(jtfPort.getText());
+				if(port <= 0 || port > 65535)
+				println("Erreur");
+				else
+				serveurInitialisation(port);
+			}
+			catch(Exception e)
+			{
+				println("Erreur doit être un entier ");
+			}
+		}
+		else
+		{
+			println(arg0.getActionCommand());
+		}
+		
 	}
 
 }

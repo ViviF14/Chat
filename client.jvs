@@ -10,7 +10,7 @@ import javax.imageio.stream.*;
 public class client extends Thread
 {
 	public Socket socket;
-	private int port = 12015;
+	private int port = 12016;
 	private String host = "localhost";
 	private BufferedReader in;
 	private PrintWriter out;
