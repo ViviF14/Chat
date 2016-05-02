@@ -45,7 +45,6 @@ public class client extends Thread implements ActionListener, KeyListener, Windo
 	{
 		// Mise en place de l'interface graphique
 		fenetre = new JFrame();
-		fenetre.addWindowListener(this);
 		fenetre.setSize(600, 600);
 		fenetre.setResizable(false);
 		fenetre.setTitle("Serveur");
@@ -53,13 +52,13 @@ public class client extends Thread implements ActionListener, KeyListener, Windo
 		fenetre.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
 		fenetre.getContentPane().setLayout(new BorderLayout());
 		getHost();	
-		//------- Création du header -------------------	
+		//------- CrÃ©ation du header -------------------	
 		JPanel content = new JPanel();		
 		content.setLayout(new GridBagLayout());	
-		// Créations des widgets
+		// CrÃ©ations des widgets
 		JLabel labelIP = new JLabel("Adrrese IP du serveur");
 		JLabel labelPort = new JLabel("Port du serveur");
-		jtfIP = new JTextField("localhost");
+		jtfIP = new JTextField("10.124.30.146");
 		jtfPort = new JTextField("12000");
 		jtfIP.setPreferredSize(new Dimension(110, 25));
 		jtfPort.setPreferredSize(new Dimension(45, 25));
@@ -80,16 +79,16 @@ public class client extends Thread implements ActionListener, KeyListener, Windo
    		content.add(jtfPort, gbc);
    		gbc.gridx = 4;
 		content.add(connexion, gbc);
-		//-------- Création de l'affichage -----------
+		//-------- CrÃ©ation de l'affichage -----------
 		textArea = new JTextPane();
 		textArea.setContentType("text/html");
 		textArea.setEditable(false);
 		JScrollPane scroll = new JScrollPane(textArea);
-		//------- Création de l'entrée utilisateur ---
+		//------- CrÃ©ation de l'entrÃ©e utilisateur ---
 		JPanel userIN = new JPanel();
 		userIN.setLayout(new GridBagLayout());
-		// Création des widgets
-		deconnexion = new JButton("Déconnexion");
+		// CrÃ©ation des widgets
+		deconnexion = new JButton("DÃ©connexion");
 		deconnexion.addActionListener(this);
 		deconnexion.setEnabled(false);
 		fileInput = new JButton("Envoyer une image");
@@ -130,6 +129,7 @@ public class client extends Thread implements ActionListener, KeyListener, Windo
 
 	public void run()
 	{
+		fenetre.addWindowListener(this);
 		String userIP = socket.getLocalAddress().toString();
 		String userPort = Integer.toString(socket.getPort());
 		String userHeader = "<font color='#FF0000' ><b>" + userIP+"</b></font> : ";
@@ -155,30 +155,11 @@ public class client extends Thread implements ActionListener, KeyListener, Windo
 		String data =  userText.getText();
 		try
 		{
-
-			if(data.equals("IMG"))
-			{
-				out = new PrintWriter(socket.getOutputStream());
-				out.println("IMG");
-				out.flush();
-				o = socket.getOutputStream();
-				BufferedImage image = ImageIO.read(new File("acab.png"));
-				ImageIO.write(image , "PNG", o);
-				o.flush();
-				out = new PrintWriter(socket.getOutputStream());
-				out.println("Nettoyage");
-				out.flush();
-				userText.setText("");
-			}
-			else
-			{
-				out = new PrintWriter(socket.getOutputStream());
-				write("<b>"+us+"</b> : " + data+ "<br />\n");
-				out.println(data);
-				out.flush();
-				userText.setText("");
-			}		
-			
+			out = new PrintWriter(socket.getOutputStream());
+			write("<b>"+us+"</b> : " + data+ "<br />\n");
+			out.println(data);
+			out.flush();
+			userText.setText("");			
 		}
 		catch(IOException e){
 			println("erreur");}
@@ -216,11 +197,11 @@ public class client extends Thread implements ActionListener, KeyListener, Windo
 		}
 		catch(Exception e)
 		{
-			println("Erreur doit être un entier ");
+			println("Erreur doit Ãªtre un entier ");
 		}
 	}
 
-	// Fonction qui inscrit des données dans la zone
+	// Fonction qui inscrit des donnÃ©es dans la zone
 	public void write(String data)
 	{
 		HTMLDocument doc = (HTMLDocument) textArea.getStyledDocument();
@@ -241,9 +222,7 @@ public class client extends Thread implements ActionListener, KeyListener, Windo
 			if (fileChooser.showOpenDialog(fileChooser) == JFileChooser.APPROVE_OPTION)
 			{
 				File file = fileChooser.getSelectedFile();
-				HTMLDocument doc = (HTMLDocument) textArea.getStyledDocument();
-				String data = "<img src=\"file:///"+file.toString()+"\"><br />";
-				write(data);			  
+				sendImage(file);
 			}
 		}
 		else if(arg0.getActionCommand().equals("Envoyer"))
@@ -254,7 +233,7 @@ public class client extends Thread implements ActionListener, KeyListener, Windo
 		{
 			connexion();
 		}
-		else if(arg0.getActionCommand().equals("Déconnexion"))
+		else if(arg0.getActionCommand().equals("DÃ©connexion"))
 		{
 			deconnexion();
 		}
@@ -264,7 +243,29 @@ public class client extends Thread implements ActionListener, KeyListener, Windo
 		}
 	}
 
-	// Fonction de déconnexion
+	public void sendImage(File file)
+	{
+		try
+		{
+			HTMLDocument doc = (HTMLDocument) textArea.getStyledDocument();
+			out = new PrintWriter(socket.getOutputStream());
+			out.println("IMG");
+			out.flush();
+			o = socket.getOutputStream();
+			BufferedImage image = ImageIO.read(file);
+			ImageIO.write(image , "PNG", o);
+			o.flush();
+			String img = "<img src=\"file:///"+file.getAbsolutePath()+"\" alt='erreur' /><br />";
+			write("<b>"+us+"</b> : <br />\n");
+			write(img);
+			out = new PrintWriter(socket.getOutputStream());
+			out.println("Nettoyage");
+			out.flush();
+			userText.setText("");	
+		}catch(IOException e){}
+	}
+
+	// Fonction de dÃ©connexion
 	public void deconnexion()
 	{
 		try
@@ -280,7 +281,7 @@ public class client extends Thread implements ActionListener, KeyListener, Windo
 		}catch(IOException e){}
 	}
 
-	// Fonctions qui récuper les touches du clavier
+	// Fonctions qui rÃ©cuper les touches du clavier
 	public void keyReleased(KeyEvent e)
 	{
 	}
@@ -297,7 +298,7 @@ public class client extends Thread implements ActionListener, KeyListener, Windo
 	{
 	}
 
-	// Fonctions qui surveille l'état de la fenetre
+	// Fonctions qui surveille l'Ã©tat de la fenetre
 	public void windowActivated(java.awt.event.WindowEvent e) {}
 	public void windowClosed(java.awt.event.WindowEvent e) {}
 	public void windowClosing(java.awt.event.WindowEvent e) {deconnexion();}
@@ -317,7 +318,7 @@ public class client extends Thread implements ActionListener, KeyListener, Windo
 		
 	}
 
-	// Nettoyage de l'écran
+	// Nettoyage de l'Ã©cran
 	public void clean()
 	{
 		textArea.setText("");
