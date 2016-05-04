@@ -42,15 +42,16 @@ public class client extends Thread implements ActionListener, KeyListener, Windo
 	public boolean connected = false;
 	private OutputStream o;
 	private boolean isFirstLaunch = true;
-	private JButton wizz;
+	private JButton wizz;	
+	private JOptionPane dialog = new JOptionPane();
 
 	client()
 	{
 		// Mise en place de l'interface graphique
 		fenetre = new JFrame();
 		fenetre.setSize(600, 600);
-		fenetre.setResizable(false);
-		fenetre.setTitle("Serveur");
+		fenetre.setResizable(false);		
+		fenetre.setTitle("Client non connecté");
 		fenetre.setLocationRelativeTo(null);
 		fenetre.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
 		fenetre.getContentPane().setLayout(new BorderLayout());
@@ -87,6 +88,9 @@ public class client extends Thread implements ActionListener, KeyListener, Windo
 		textArea.setContentType("text/html");
 		textArea.setEditable(false);
 		JScrollPane scroll = new JScrollPane(textArea);
+		// permet de rester en bas 	
+		 DefaultCaret caret = (DefaultCaret)textArea.getCaret();
+		 caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
 		//------- Création de l'entrée utilisateur ---
 		JPanel userIN = new JPanel();
 		userIN.setLayout(new GridBagLayout());
@@ -124,7 +128,9 @@ public class client extends Thread implements ActionListener, KeyListener, Windo
 		gbcUser.gridx = 0;
 		gbcUser.weightx = 1.0;	
 		gbcUser.gridwidth = 5;
-		userIN.add(userText, gbcUser);		
+		userIN.add(userText, gbcUser);
+		changeButton(false);		
+
 		
 		fenetre.getContentPane().add(content, BorderLayout.NORTH);
 		fenetre.getContentPane().add(scroll, BorderLayout.CENTER);
@@ -178,11 +184,44 @@ public class client extends Thread implements ActionListener, KeyListener, Windo
 		}	
 	}
 
+	// Fonction qui permet la connexion au serveur
+	public void connexion()
+	{
+		String host = jtfIP.getText();
+		port = Integer.parseInt(jtfPort.getText());
+		if(port > 0 && port < 65535 )
+		{
+			try
+			{
+				socket = new Socket(host, port);
+				connected = true;	
+				changeButton(true);
+				connexion.setEnabled(false);
+				if(isFirstLaunch)
+				{
+					this.start();
+					isFirstLaunch = false;
+				}
+				
+				write("<b><i> Connecté à " + host + ":"  + port +" <br /><br /></i></b>");
+				fenetre.setTitle("Connecté à " + host + ":"  + port);
+			}
+			catch(IOException e)
+			{
+				displayDial("erreur", e.toString(), JOptionPane.ERROR_MESSAGE);
+			}
+		}
+		else
+		{
+			displayDial("Port incorrect", "Port doit etre entre 0 et 65535", JOptionPane.WARNING_MESSAGE );
+		}
+
+	}
+
 	// Fonction qui envoie un msg au client
 	public void send()
 	{
 		String data =  userText.getText();
-		println(data);
 		try
 		{
 			out = new PrintWriter(socket.getOutputStream());
@@ -191,64 +230,19 @@ public class client extends Thread implements ActionListener, KeyListener, Windo
 			out.flush();
 			userText.setText("");			
 		}
-		catch(IOException e)
-		{
-			println("erreur");
-		}		
-	}
-
-	// Fonction qui permet la connexion au serveur
-	public void connexion()
-	{
-		String host = jtfIP.getText();
-		try
-		{
-			port = Integer.parseInt(jtfPort.getText());
-			if(port >= 0 && port < 65535 )
-			{
-				try
-				{
-					socket = new Socket(host, port);
-					connected = true;	
-					deconnexion.setEnabled(true);
-					send.setEnabled(true);
-					fileInput.setEnabled(true);
-					connexion.setEnabled(false);
-					if(isFirstLaunch)
-					{
-						this.start();
-						isFirstLaunch = false;
-					}
-					
-					write("<b><i> Connecté à " + host + ":"  + port +" <br /><br /></i></b>");
-				}
-				catch(IOException e)
-				{
-					println(e);
-					println("Erreur");
-				}
-			}
-			else
-			{
-				println("Port doit etre entre 0 et 65535 -> " + Integer.toString(port) );
-			}
-		}
-		catch(IllegalThreadStateException e)
-		{
-			println(e);
-		}
+		catch(IOException e){}		
 	}
 
 	// Fonction qui inscrit des données dans la zone
 	public void write(String data)
 	{
-		HTMLDocument doc = (HTMLDocument) textArea.getStyledDocument();
+		doc = (HTMLDocument) textArea.getStyledDocument();
 		try
 		{
 			doc.insertAfterEnd(doc.getCharacterElement(doc.getLength()), data+"\n");
 		}
-		catch(BadLocationException e){println(e);}
-		catch(IOException e){println(e);}
+		catch(BadLocationException e){}
+		catch(IOException e){}
 	}
 
 	// Fonction qui attend un click sur un boutton
@@ -293,18 +287,18 @@ public class client extends Thread implements ActionListener, KeyListener, Windo
 		 *  précis comme close ou wizzz
 		 */
 		try
-			{				
-				out = new PrintWriter(socket.getOutputStream());
-				out.println(data);
-				out.flush();
-			}catch(IOException e){}
+		{				
+			out = new PrintWriter(socket.getOutputStream());
+			out.println(data);
+			out.flush();
+		}catch(IOException e){}
 	}
 
 	public void sendImage(File file)
 	{
 		try
 		{
-			HTMLDocument doc = (HTMLDocument) textArea.getStyledDocument();
+			doc = (HTMLDocument) textArea.getStyledDocument();
 			out = new PrintWriter(socket.getOutputStream());
 			out.println("IMG");
 			out.flush();
@@ -327,31 +321,24 @@ public class client extends Thread implements ActionListener, KeyListener, Windo
 	{
 		try
 		{
-			deconnexion.setEnabled(false);
-			send.setEnabled(false);
-			fileInput.setEnabled(false);
+			changeButton(false);
 			connexion.setEnabled(true);			
 			send("close");
 			socket.close();
-			write("<b><i> Déconnecté, la fenêtre va se fermer dans 2s ...<br /><br /></i></b>");
+			write("<b><i> Déconnecté<br /><br /></i></b>");
+			fenetre.setTitle("Client non connecté");
 		}catch(IOException e){}
 	}
 
 	// Fonctions qui récuper les touches du clavier
-	public void keyReleased(KeyEvent e)
-	{
-	}
-
+	public void keyReleased(KeyEvent e){}
+	public void keyTyped(KeyEvent e){}
 	public void keyPressed(KeyEvent e)
 	{
 		if(e.getKeyCode() == KeyEvent.VK_ENTER)
 		{
 			send();
 		}
-	}
-
-	public void keyTyped(KeyEvent e)
-	{
 	}
 
 	// Fonctions qui surveille l'état de la fenetre
@@ -411,6 +398,21 @@ public class client extends Thread implements ActionListener, KeyListener, Windo
 		}
 		fenetre.setLocation(originX, originY);
 		
+	}
+
+	// Fonction qui change l'état des bouttons
+	public void changeButton(boolean b)
+	{
+		deconnexion.setEnabled(b);
+		send.setEnabled(b);
+		fileInput.setEnabled(b);
+		wizz.setEnabled(b);
+	}
+
+	// Affichage de boite de dialog
+	public void displayDial(String titre, String message, int kind)
+	{
+		dialog.showMessageDialog(null,message , titre, kind);
 	}
 }
 

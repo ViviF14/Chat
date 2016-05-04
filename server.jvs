@@ -87,7 +87,10 @@ public class Serveur extends Thread implements ActionListener, KeyListener, Wind
 		textArea.setEditable(false);
 		Font font = new Font("Serif", Font.ITALIC, 45);
 		textArea.setFont(font);
-		JScrollPane scroll = new JScrollPane(textArea);
+		JScrollPane scroll = new JScrollPane(textArea);	
+		// permet de rester en bas 	
+		 DefaultCaret caret = (DefaultCaret)textArea.getCaret();
+		 caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
 		//------- Création de l'entrée utilisateur ---
 		JPanel userIN = new JPanel();
 		userIN.setLayout(new GridBagLayout());
@@ -197,8 +200,7 @@ public class Serveur extends Thread implements ActionListener, KeyListener, Wind
 						doc = (HTMLDocument) textArea.getStyledDocument();
 						String data = "<img src=\"file:///"+outputfile.getAbsolutePath()+"\" alt='erreur'><br />";
 						write(userHeader+ "<br />");
-						write(data);
-											
+						write(data);											
 					}
 					// si on recoit un wizz
 					else if(msg.equals("messagequifaitbougerlecran"))
@@ -449,12 +451,10 @@ public class Serveur extends Thread implements ActionListener, KeyListener, Wind
 		 if(socketOpen && isUserConnected)
 		 {
 		 	deconnexion();
-		 	println("socket and user");
 		 	try
 			{
 				socketserver.close();
 			}catch(IOException serv){};
-			println("ok");
 		 }
 		 else if(socketOpen)
 		 {
@@ -522,10 +522,10 @@ public class Serveur extends Thread implements ActionListener, KeyListener, Wind
 		 *  précis comme close ou wizzz
 		 */
 		try
-			{				
-				out = new PrintWriter(socketduserveur.getOutputStream());
-				out.println(data);
-				out.flush();
+		{				
+			out = new PrintWriter(socketduserveur.getOutputStream());
+			out.println(data);
+			out.flush();
 			}catch(IOException e){}
 	}
 
