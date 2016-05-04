@@ -38,6 +38,7 @@ public class Serveur extends Thread implements ActionListener, KeyListener, Wind
 	private HTMLDocument doc;
 	private JButton send;
 	private JTextArea userText;
+	private OutputStream o;
 	
 	Serveur() {
 		// Mise en place de l'interface graphique
@@ -83,6 +84,7 @@ public class Serveur extends Thread implements ActionListener, KeyListener, Wind
 		// Création des widgets
 		deconnexion = new JButton("Déconnexion");
 		deconnexion.setEnabled(false);
+		deconnexion.addActionListener(this);
 		fileInput = new JButton("Envoyer une image");
 		fileInput.setEnabled(false);
 		fileInput.addActionListener(this);
@@ -168,7 +170,7 @@ public class Serveur extends Thread implements ActionListener, KeyListener, Wind
 						String trash = in.readLine();
 						doc = (HTMLDocument) textArea.getStyledDocument();
 						String data = "<img src=\"file:///"+outputfile.getAbsolutePath()+"\" alt='erreur'><br />";
-						write(userHeader);
+						write(userHeader+ "<br />");
 						write(data);
 											
 					}
@@ -211,9 +213,7 @@ public class Serveur extends Thread implements ActionListener, KeyListener, Wind
 			if (fileChooser.showOpenDialog(fileChooser) == JFileChooser.APPROVE_OPTION)
 			{
 				File file = fileChooser.getSelectedFile();
-				HTMLDocument doc = (HTMLDocument) textArea.getStyledDocument();
-				String data = "<img src=\"file:///"+file.toString()+"\"><br />";
-				write(data);			  
+				sendImage(file);			  
 			}
 		}
 		else if(arg0.getActionCommand().equals("Envoyer"))
@@ -224,6 +224,47 @@ public class Serveur extends Thread implements ActionListener, KeyListener, Wind
 		{
 			clean();
 		}
+		else if(arg0.getActionCommand().equals("Déconnexion"))
+		{
+			deconnexion();
+		}
+	}
+
+	// fonction d'envoie d'image
+	public void sendImage(File file)
+	{
+		try
+		{
+			HTMLDocument doc = (HTMLDocument) textArea.getStyledDocument();
+			out = new PrintWriter(socketduserveur.getOutputStream());
+			out.println("IMG");
+			out.flush();
+			o = socketduserveur.getOutputStream();
+			BufferedImage image = ImageIO.read(file);
+			ImageIO.write(image , "PNG", o);
+			o.flush();
+			String img = "<img src=\"file:///"+file.getAbsolutePath()+"\" alt='erreur' /><br />";
+			write("<b>"+host+"</b> : <br />\n");
+			write(img);
+			out = new PrintWriter(socketduserveur.getOutputStream());
+			out.println("Nettoyage");
+			out.flush();
+			userText.setText("");	
+		}catch(IOException e){}
+	}
+
+	// Fonction de déconnexion
+	public void deconnexion()
+	{
+		try
+		{
+			deconnexion.setEnabled(false);
+			send.setEnabled(false);
+			fileInput.setEnabled(false);
+			out = new PrintWriter(socketduserveur.getOutputStream());
+			out.println("close");
+			out.flush();
+		}catch(IOException e){}
 	}
 
 	// Fonction qui envoie un msg au client
@@ -239,6 +280,7 @@ public class Serveur extends Thread implements ActionListener, KeyListener, Wind
 			userText.setText("");
 		}
 		catch(IOException e){}
+		
 	}
 	
 
@@ -286,10 +328,12 @@ public class Serveur extends Thread implements ActionListener, KeyListener, Wind
 	public void windowActivated(java.awt.event.WindowEvent e) {}
 	public void windowClosed(java.awt.event.WindowEvent e) {}
 	public void windowClosing(java.awt.event.WindowEvent e) {
-		try
-		{
-			socketserver.close();
-		}catch(IOException erreur){}}
+			deconnexion();
+			try
+			{
+				socketserver.close();
+			}catch(IOException serv){};
+	}
 	public void windowDeactivated(java.awt.event.WindowEvent e) {}
 	public void windowDeiconified(java.awt.event.WindowEvent e) {}
 	public void windowIconified(java.awt.event.WindowEvent e) {}

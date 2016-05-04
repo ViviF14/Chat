@@ -19,6 +19,7 @@ import javax.swing.*;
 import javax.swing.text.*;
 import javax.swing.text.html.*;
 import java.awt.event.*;
+import java.util.*;
 
 public class client extends Thread implements ActionListener, KeyListener, WindowListener  
 {
@@ -40,12 +41,12 @@ public class client extends Thread implements ActionListener, KeyListener, Windo
 	private JTextField jtfIP;
 	public boolean connected = false;
 	private OutputStream o;
+	private boolean isFirstLaunch = true;
 
 	client()
 	{
 		// Mise en place de l'interface graphique
 		fenetre = new JFrame();
-		fenetre.addWindowListener(this);
 		fenetre.setSize(600, 600);
 		fenetre.setResizable(false);
 		fenetre.setTitle("Serveur");
@@ -130,58 +131,61 @@ public class client extends Thread implements ActionListener, KeyListener, Windo
 
 	public void run()
 	{
+		fenetre.addWindowListener(this);
 		String userIP = socket.getLocalAddress().toString();
 		String userPort = Integer.toString(socket.getPort());
 		String userHeader = "<font color='#FF0000' ><b>" + userIP+"</b></font> : ";
 		
 		while(true)
 		{
+
 			try
 			{
 				in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 				String msg = in.readLine();
+				if(msg.equals("close"))
+				{
+					deconnexion();
+				}
+				else if(msg.equals("IMG"))
+				{
+					BufferedImage image = ImageIO.read(socket.getInputStream());
+					File outputfile = new File("image.png");
+					ImageIO.write(image, "png", outputfile);
+					in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+					String trash = in.readLine();
+					doc = (HTMLDocument) textArea.getStyledDocument();
+					String data = "<img src=\"file:///"+outputfile.getAbsolutePath()+"\" alt='erreur'><br />";
+					write(userHeader+ "<br />");
+					write(data);
+				}
+				else
 				write(userHeader + msg + "<br />");
 			}
 		 	catch (IOException e)		 
 			{
 				e.printStackTrace();
 			}			
-		}			
+		}	
 	}
 
 	// Fonction qui envoie un msg au client
 	public void send()
 	{
 		String data =  userText.getText();
+		println(data);
 		try
 		{
-
-			if(data.equals("IMG"))
-			{
-				out = new PrintWriter(socket.getOutputStream());
-				out.println("IMG");
-				out.flush();
-				o = socket.getOutputStream();
-				BufferedImage image = ImageIO.read(new File("acab.png"));
-				ImageIO.write(image , "PNG", o);
-				o.flush();
-				out = new PrintWriter(socket.getOutputStream());
-				out.println("Nettoyage");
-				out.flush();
-				userText.setText("");
-			}
-			else
-			{
-				out = new PrintWriter(socket.getOutputStream());
-				write("<b>"+us+"</b> : " + data+ "<br />\n");
-				out.println(data);
-				out.flush();
-				userText.setText("");
-			}		
-			
+			out = new PrintWriter(socket.getOutputStream());
+			write("<b>"+us+"</b> : " + data+ "<br />\n");
+			out.println(data);
+			out.flush();
+			userText.setText("");			
 		}
-		catch(IOException e){
-			println("erreur");}
+		catch(IOException e)
+		{
+			println("erreur");
+		}		
 	}
 
 	// Fonction qui permet la connexion au serveur
@@ -201,7 +205,13 @@ public class client extends Thread implements ActionListener, KeyListener, Windo
 					send.setEnabled(true);
 					fileInput.setEnabled(true);
 					connexion.setEnabled(false);
-					this.start();
+					if(isFirstLaunch)
+					{
+						this.start();
+						isFirstLaunch = false;
+					}
+					
+					write("<b><i> Connecté à " + host + ":"  + port +" <br /><br /></i></b>");
 				}
 				catch(IOException e)
 				{
@@ -214,9 +224,9 @@ public class client extends Thread implements ActionListener, KeyListener, Windo
 				println("Port doit etre entre 0 et 65535 -> " + Integer.toString(port) );
 			}
 		}
-		catch(Exception e)
+		catch(IllegalThreadStateException e)
 		{
-			println("Erreur doit être un entier ");
+			println(e);
 		}
 	}
 
@@ -241,9 +251,7 @@ public class client extends Thread implements ActionListener, KeyListener, Windo
 			if (fileChooser.showOpenDialog(fileChooser) == JFileChooser.APPROVE_OPTION)
 			{
 				File file = fileChooser.getSelectedFile();
-				HTMLDocument doc = (HTMLDocument) textArea.getStyledDocument();
-				String data = "<img src=\"file:///"+file.toString()+"\"><br />";
-				write(data);			  
+				sendImage(file);
 			}
 		}
 		else if(arg0.getActionCommand().equals("Envoyer"))
@@ -264,6 +272,28 @@ public class client extends Thread implements ActionListener, KeyListener, Windo
 		}
 	}
 
+	public void sendImage(File file)
+	{
+		try
+		{
+			HTMLDocument doc = (HTMLDocument) textArea.getStyledDocument();
+			out = new PrintWriter(socket.getOutputStream());
+			out.println("IMG");
+			out.flush();
+			o = socket.getOutputStream();
+			BufferedImage image = ImageIO.read(file);
+			ImageIO.write(image , "PNG", o);
+			o.flush();
+			String img = "<img src=\"file:///"+file.getAbsolutePath()+"\" alt='erreur' /><br />";
+			write("<b>"+us+"</b> : <br />\n");
+			write(img);
+			out = new PrintWriter(socket.getOutputStream());
+			out.println("Nettoyage");
+			out.flush();
+			userText.setText("");	
+		}catch(IOException e){}
+	}
+
 	// Fonction de déconnexion
 	public void deconnexion()
 	{
@@ -272,11 +302,12 @@ public class client extends Thread implements ActionListener, KeyListener, Windo
 			deconnexion.setEnabled(false);
 			send.setEnabled(false);
 			fileInput.setEnabled(false);
-			connexion.setEnabled(true);
+			connexion.setEnabled(true);			
 			out = new PrintWriter(socket.getOutputStream());
 			out.println("close");
 			out.flush();
 			socket.close();
+			write("<b><i> Déconnecté, la fenêtre va se fermer dans 2s ...<br /><br /></i></b>");
 		}catch(IOException e){}
 	}
 
@@ -322,9 +353,6 @@ public class client extends Thread implements ActionListener, KeyListener, Windo
 	{
 		textArea.setText("");
 	}
-
-
-
 }
 
 void main()
