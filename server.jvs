@@ -46,6 +46,7 @@ public class Serveur extends Thread implements ActionListener, KeyListener, Wind
 	private OutputStream o;
 	private boolean isUserConnected = false;
 	private boolean socketOpen =false;
+	private JOptionPane dialog = new JOptionPane();
 	
 	Serveur() {
 		/* Mise en place de l'interface graphiqueg race à la bibliotheque 
@@ -234,6 +235,7 @@ public class Serveur extends Thread implements ActionListener, KeyListener, Wind
 		}catch (IOException e)
 		{
 			fenetre.setTitle("Serveur hors ligne");
+			displayDial("Erreur", "Impossible d'ouvrir le port. \n\n Port déjà utilisé ou bloqué par firewall", JOptionPane.ERROR_MESSAGE);
 		}
 	}
 
@@ -263,11 +265,11 @@ public class Serveur extends Thread implements ActionListener, KeyListener, Wind
 							println(ext);
 						}
 						else
-						println("Erreur ext");
+						displayDial("Extension non autorisée", "png, jpg, jpeg ou gif uniquement",JOptionPane.WARNING_MESSAGE); 
 					}
 				}	
 				else
-				println("fichier trop grand");		  
+				displayDial("Fichier trop volumineux", "Maximum 2Mo",JOptionPane.WARNING_MESSAGE); 	  
 			}
 		}
 		// ---- Si c'est le bouton d'envoie ----
@@ -525,6 +527,12 @@ public class Serveur extends Thread implements ActionListener, KeyListener, Wind
 				out.println(data);
 				out.flush();
 			}catch(IOException e){}
+	}
+
+	// Affichage de boite de dialog
+	public void displayDial(String titre, String message, int kind)
+	{
+		dialog.showMessageDialog(null,message , titre, kind);
 	}
 
 	
