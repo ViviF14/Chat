@@ -19,9 +19,13 @@ import javax.swing.*;
 import javax.swing.text.*;
 import javax.swing.text.html.*;
 import java.awt.event.*;
+import java.util.*;
 
 
-// Création de notre classe dérivant de la classe Thread
+/* Création de notre classe dérivant de la classe Thread
+ *  permettant de créer des taches qui s'executent de façon
+ *  asynchrone évitant de bloquer la fenetre principale.
+ */
 public class Serveur extends Thread implements ActionListener, KeyListener, WindowListener
 {
 	// déclaration de variable de classe 
@@ -33,17 +37,22 @@ public class Serveur extends Thread implements ActionListener, KeyListener, Wind
 	private JTextPane textArea;
 	private JButton deconnexion;
 	private JButton fileInput;
+	private JButton wizz;
 	private String host;
 	private int port = 12000;
 	private HTMLDocument doc;
 	private JButton send;
 	private JTextArea userText;
 	private OutputStream o;
+	private boolean isUserConnected = false;
+	private boolean socketOpen =false;
 	
 	Serveur() {
-		// Mise en place de l'interface graphique
+		/* Mise en place de l'interface graphiqueg race à la bibliotheque 
+		 *  fournie nous permettant de créer des fenetres, d'y ajouter
+		 *  des widgets etc		 *  
+		 */
 		fenetre = new JFrame();
-		fenetre.addWindowListener(this);
 		fenetre.setSize(600, 600);
 		fenetre.setTitle("Serveur");
 		fenetre.setLocationRelativeTo(null);
@@ -83,106 +92,129 @@ public class Serveur extends Thread implements ActionListener, KeyListener, Wind
 		userIN.setLayout(new GridBagLayout());
 		// Création des widgets
 		deconnexion = new JButton("Déconnexion");
-		deconnexion.setEnabled(false);
 		deconnexion.addActionListener(this);
 		fileInput = new JButton("Envoyer une image");
-		fileInput.setEnabled(false);
 		fileInput.addActionListener(this);
 		send = new JButton("Envoyer");
-		send.setEnabled(false);
 		send.addActionListener(this);
 		userText = new JTextArea(5, 20);
 		userText.setMargin(new Insets(5, 5, 5, 5));
 		userText.addKeyListener(this);
 		JButton clean = new JButton("Nettoyer");
 		clean.addActionListener(this);
-		// Ajout des widgets
+		wizz = new JButton("Wizz");
+		wizz.addActionListener(this);
+		// Ajout des widgets sur le layout userIN
 		GridBagConstraints gbcUser = new GridBagConstraints();
 		gbcUser.gridx = 0;
 		gbcUser.gridy = 0;
-		gbcUser.fill = GridBagConstraints.HORIZONTAL;
 		gbcUser.insets = new Insets(10, 10, 10, 10);
 		userIN.add(deconnexion, gbcUser);	
 		gbcUser.gridx = 1;
-		userIN.add(fileInput, gbcUser);
-		gbcUser.gridx = 2;	
+		userIN.add(clean, gbcUser);		
+		gbcUser.gridx = 2;			
+		userIN.add(wizz, gbcUser);		
+		gbcUser.gridx = 3;				
+		userIN.add(fileInput, gbcUser);	
+		gbcUser.gridx = 4;		
 		userIN.add(send, gbcUser);
-		gbcUser.gridx = 3;	
-		userIN.add(clean, gbcUser);
 		gbcUser.insets = new Insets(0, 10, 10, 10);
+		gbcUser.fill = GridBagConstraints.HORIZONTAL;
 		gbcUser.gridy = 1;
 		gbcUser.gridx = 0;
 		gbcUser.weightx = 1.0;	
-		gbcUser.gridwidth = 4;
+		gbcUser.gridwidth = 5;
 		userIN.add(userText, gbcUser);	
 		//------ Ajout des panels sur le layout principal -----
+		// header
 		fenetre.getContentPane().add(content, BorderLayout.NORTH);
+		// zone d'affichage
 		fenetre.getContentPane().add(scroll, BorderLayout.CENTER);
-		fenetre.getContentPane().add(userIN, BorderLayout.SOUTH);
+		// entrée utilisateur
+		fenetre.getContentPane().add(userIN, BorderLayout.SOUTH);		
+		// on active la fenetre et on appel la fonction pour essayer d'ouvrir un port
+		// et on désactive les boutons
+		changeButton(false);
 		fenetre.setVisible(true);
-
 		serveurInitialisation();		
+		fenetre.addWindowListener(this);
 	}
 
 	// Fonction principale permettant d'afficher les msg reçus
 	//et de connecter les utilisateurs
 	public void run()
-	{						
+	{					
 		try
 		{
 			while(true)
 			{
 				// Quelqu'un se connecte
 				socketduserveur = socketserver.accept(); 
+				isUserConnected = true;
 				send.setEnabled(true);
 				String userIP = socketduserveur.getLocalAddress().toString();
 				String userPort = Integer.toString(socketduserveur.getPort());
 				String userHeader = "<font color='#FF0000' ><b>" + userIP+"</b></font> : ";
 				write("<b><i>" +userIP  + ":" + userPort + " est connecté <br /><br /></i></b>");
 				// On réactive les boutons
-				deconnexion.setEnabled(true);
-				send.setEnabled(true);
-				fileInput.setEnabled(true);
+				changeButton(true);
 			
-				// on attend un message 
+				// on attend un message quelconque
 				while(true)
-				{
-									
+				{									
 					in = new BufferedReader(new InputStreamReader(socketduserveur.getInputStream()));
 					String msg = in.readLine();
 
+					// Si c'est un message de déconnexion 
 					if (msg.equals("close"))
 					{
 						write("<b><i>" +userIP  + ":" + userPort + " est déconnecté <br /><br /></i></b>");
-						deconnexion.setEnabled(false);
-						send.setEnabled(false);
-						fileInput.setEnabled(false);
+						changeButton(false);
 						socketduserveur.close();
+						isUserConnected = false;
 						break;
 					}
+					// Si c'est une image
 					else if(msg.equals("IMG"))
 					{
-
+						/* nous avons choisis de ne pas créer d'autres
+						 *  threads pour la réception d'image. Le programme 
+						 *  peut alors bloquer lors de la réception d'images
+						 *  volumineuse
+						 */
+						 						
+						// On récupére le flux de byte et on stock dans une var adaptée
 						BufferedImage image = ImageIO.read(socketduserveur.getInputStream());
-						File outputfile = new File("image.png");
+						// On ouvre un fichier qui va recevoir l'image
+						File outputfile = new File("tmp.png");
+						//on écrit dedans
 						ImageIO.write(image, "png", outputfile);
+						// On récupére ce qui reste dans le flux car il peut rester des débris non affichable
 						in = new BufferedReader(new InputStreamReader(socketduserveur.getInputStream()));
 						String trash = in.readLine();
+						// On récuper l'interface d'affichage et on ajoute l'image 
 						doc = (HTMLDocument) textArea.getStyledDocument();
 						String data = "<img src=\"file:///"+outputfile.getAbsolutePath()+"\" alt='erreur'><br />";
 						write(userHeader+ "<br />");
 						write(data);
 											
 					}
+					// si on recoit un wizz
+					else if(msg.equals("messagequifaitbougerlecran"))
+					{
+						// Appel fonction wizzz
+						wizzz();
+					}
+					// Si c'est un simple message texte on l'affiche
 					else if(msg != null)
 					{
 						doc = (HTMLDocument) textArea.getStyledDocument();
 						write(userHeader + msg+"<br />");							
 					}
 				}
-			}		                
-        
+			}    
 	 	}
+	 	// On récupere les erreurs
 	 	catch (IOException e)		 
 		{
 			e.printStackTrace();
@@ -191,12 +223,13 @@ public class Serveur extends Thread implements ActionListener, KeyListener, Wind
 
 	// Fonction qui initialise le serveur
 	public void serveurInitialisation()
-	{
+	{		
+		// On met la fenetre sur "écoute" pour surveiller son statut
 		// Tentative de créer le serveur avec ouverture d'1 port
 		try {
 			socketserver = new ServerSocket(port);
-			System.out.println("Le serveur est à l'écoute du port "+socketserver.getLocalPort());
 			fenetre.setTitle("Serveur en ligne sur  " + +socketserver.getLocalPort());
+			socketOpen = true;
 		 // Si y a une érreur on la récupère
 		}catch (IOException e)
 		{
@@ -207,82 +240,138 @@ public class Serveur extends Thread implements ActionListener, KeyListener, Wind
 	// Fonction qui attend un click sur un boutton
 	public void actionPerformed(ActionEvent arg0)
 	{
+		// On regarde quel bouton a été clique
+		// ---- ici bouton pour envoyer une image ----
 		if(arg0.getActionCommand().equals("Envoyer une image"))
 		{
+			// On récuper l'image grace à une fonction java
 			JFileChooser fileChooser = new JFileChooser();
+			// si ça a marché
 			if (fileChooser.showOpenDialog(fileChooser) == JFileChooser.APPROVE_OPTION)
-			{
+			{	// on récuper l'image et on la passe en parametre à une fonction 
+				// qui se charge de l'envoyer
 				File file = fileChooser.getSelectedFile();
-				sendImage(file);			  
+				double fileSize = file.length()/1024/1024;
+				if(fileSize <= 2)
+				{
+					if(file.getName().lastIndexOf(".") > 0)
+					{
+						String ext = file.getName().substring(file.getName().lastIndexOf("."));
+						String authorized[] = {".png", ".jpg", ".jpeg", ".gif"};
+						if(Arrays.asList(authorized).contains(ext))
+						{
+							println(ext);
+						}
+						else
+						println("Erreur ext");
+					}
+				}	
+				else
+				println("fichier trop grand");		  
 			}
 		}
+		// ---- Si c'est le bouton d'envoie ----
 		else if(arg0.getActionCommand().equals("Envoyer"))
 		{
+			// appel de la fonction d'envoie
 			send();			
 		}
+		// ---- Si c'est le bouton de nettoyage ----
 		else if(arg0.getActionCommand().equals("Nettoyer"))
 		{
+			// appel de la fonction de nettoyage
 			clean();
 		}
+		// ---- Si c'est le bouton de déconnexin ----
 		else if(arg0.getActionCommand().equals("Déconnexion"))
 		{
+			// appel de la fonction de déconnexion
 			deconnexion();
+		}
+		else if(arg0.getActionCommand().equals("Wizz"))
+		{
+			// on envoie un wizz
+			send("messagequifaitbougerlecran");
+			
 		}
 	}
 
 	// fonction d'envoie d'image
 	public void sendImage(File file)
 	{
+		// Cette fonction est en deux parties 1) envoie 2) affichage.
+		
+		// On récupéer la zone d'affichage pour pouvoir afficher l'image plus tard
+			doc = (HTMLDocument) textArea.getStyledDocument();
 		try
 		{
-			HTMLDocument doc = (HTMLDocument) textArea.getStyledDocument();
+			/* récupération du flux de sortie grace à une méthode
+			* création d'une classe permettant de faire de 
+			* l'écriture sous forme de text
+			*/
 			out = new PrintWriter(socketduserveur.getOutputStream());
 			out.println("IMG");
+			// on envoie un msg IMG pour prévenir que le flux qui va arriver n'est
+			// pas du texte mais des bytes
 			out.flush();
+			//on utilise le flux sortie mais cette fois en brute
 			o = socketduserveur.getOutputStream();
+			// on récupére notre fichier dans un buffer spécifique aux image
 			BufferedImage image = ImageIO.read(file);
+			// on écrit notre buffer sur le flux sortant
 			ImageIO.write(image , "PNG", o);
-			o.flush();
+			/* Affichage de l'image dans notre propre zone d'affichage.
+			 *  la zone d'affichage accepete le HTML cela nous permet d'utiliser
+			 *  les balises de ce langage pour mettre en forme nos données
+			 */
+			// On crée une string contenant la balise HTML img
 			String img = "<img src=\"file:///"+file.getAbsolutePath()+"\" alt='erreur' /><br />";
 			write("<b>"+host+"</b> : <br />\n");
+			// On affiche l'image grâce à une fonction write()
 			write(img);
-			out = new PrintWriter(socketduserveur.getOutputStream());
-			out.println("Nettoyage");
+			/* le flux de sortie reste en attente car ImageIO n'envoie pas de EOF (end of file)
+			 *  alors on envoie un message vide qui lui contient un EOF
+			 *  Si on ne le fait pas la connexion sera jamais fermée (toujours en attente car pas 
+			 *  de eof) 
+			 */			
+			out.println(""); // ajout de l'eof (\r\n)
+			//on "envoie" le flux sortant
 			out.flush();
-			userText.setText("");	
 		}catch(IOException e){}
 	}
 
 	// Fonction de déconnexion
 	public void deconnexion()
 	{
-		try
-		{
-			deconnexion.setEnabled(false);
-			send.setEnabled(false);
-			fileInput.setEnabled(false);
-			out = new PrintWriter(socketduserveur.getOutputStream());
-			out.println("close");
-			out.flush();
-		}catch(IOException e){}
+		// on désactive les boutons
+		changeButton(false);
+		
+		/*  on envoie un msg de déconnexion
+		 *  ici on ne ferme pas la liaison car suite à ce message le client 
+		 *  va renvoyer un message de déconnexion. On s'assure ainsi que le client 
+		 *  est bien déconnecté avant de la fermer
+		 */	
+		 send("close");	
+			
 	}
 
 	// Fonction qui envoie un msg au client
 	public void send()
 	{
+		// on récupere le texte de la zone d'entrée
 		String data =  userText.getText();
 		try
 		{
 			out = new PrintWriter(socketduserveur.getOutputStream());
 			write("<b>"+host+"</b> : " + data+ "<br />");
+			// on envoie le message au client
 			out.println(data);
 			out.flush();
+			// on vide la zone de texte
 			userText.setText("");
 		}
-		catch(IOException e){}
-		
-	}
-	
+		catch(IOException e){}		
+	}	
 
 	// Fonction qui trouve l'adresse IP de la machine
 	public void getHost()
@@ -291,62 +380,156 @@ public class Serveur extends Thread implements ActionListener, KeyListener, Wind
 		{
 			host = InetAddress.getLocalHost().toString();
 		}
-		catch(UnknownHostException e){}
-		
+		catch(UnknownHostException e){}		
 	}
 
 	// Fonction qui inscrit des données dans la zone
 	public void write(String data)
 	{
-		HTMLDocument doc = (HTMLDocument) textArea.getStyledDocument();
+		// on récupere la zone d'affichage
+		doc = (HTMLDocument) textArea.getStyledDocument();
 		try
-		{
-			doc.insertAfterEnd(doc.getCharacterElement(doc.getLength()), data+"\n");
+		{ 
+			/* insertAfterEnd(int position, String data)
+			/* on récupere la taille des données déja présente
+			 *  pour écrire après celle ci
+			 */			 
+			 doc.insertAfterEnd(doc.getCharacterElement(doc.getLength()), data+"\n");
 		}
 		catch(BadLocationException e){}
 		catch(IOException e){}
 	}
 
-	// Fonction qui récuper les touches du clavier
-	public void keyReleased(KeyEvent e)
+	/* Fonction qui récuper les touches du clavier
+	 *  plusieurs sont disponible en fonction du 
+	 *  statut de la touche. Ici on s'interesse au 
+	 *  moment ou la touche est préssée
+	 */
+	public void keyReleased(KeyEvent e){}	
+	public void keyTyped(KeyEvent e){}
+	public void keyPressed(KeyEvent e)	
 	{
-	}
-
-	public void keyPressed(KeyEvent e)
-	{
+		// On récupere l'id de la touche et on vérifie que 
+		// c'est bien la touche entrée		
 		if(e.getKeyCode() == KeyEvent.VK_ENTER)
 		{
 			send();
 		}
 	}
 
-	public void keyTyped(KeyEvent e)
-	{
-	}
-
-	// Fonctions qui surveille l'état de la fenetre
+	/* Fonctions qui surveille l'état de la fenetre
+	 *  plusieurs sont disponibles mais on 
+	 *  s'interesse uniquement à l'evenement
+	 *  de fermeture de fenetre
+	 */
 	public void windowActivated(java.awt.event.WindowEvent e) {}
-	public void windowClosed(java.awt.event.WindowEvent e) {}
-	public void windowClosing(java.awt.event.WindowEvent e) {
-			deconnexion();
-			try
-			{
-				socketserver.close();
-			}catch(IOException serv){};
-	}
+	public void windowClosed(java.awt.event.WindowEvent e) {}	
 	public void windowDeactivated(java.awt.event.WindowEvent e) {}
 	public void windowDeiconified(java.awt.event.WindowEvent e) {}
 	public void windowIconified(java.awt.event.WindowEvent e) {}
 	public void windowOpened(java.awt.event.WindowEvent e) {}
+	public void windowClosing(java.awt.event.WindowEvent e) {
+		/* Si la fenetre est fermée il ne faut pas oublier de fermer
+		 * le socket au risque de laisser un port ouvert et de 
+		 * ne plus pouvoir l'utiliser. On appel donc la 
+		 * fontion de déconnexion et on ferme également le port
+		 * le laissant disponible pour d'autres programmes 
+		 */
 
-	// Nettoyage de l'écran
+		 /*On vérifie si un utilisateur est connecté et que le 
+		  * socket a été ouvert 
+		  * car si personne est connecté et qu'on essaie de
+		  * fermer la liaison et qu'elle n'a jamais été ouverte
+		  * => erreur
+		  */
+
+		  
+		 if(socketOpen && isUserConnected)
+		 {
+		 	deconnexion();
+		 	println("socket and user");
+		 	try
+			{
+				socketserver.close();
+			}catch(IOException serv){};
+			println("ok");
+		 }
+		 else if(socketOpen)
+		 {
+		 	try
+			{
+				socketserver.close();
+			}catch(IOException serv){};
+			println("seul");
+		 }
+		 
+	}
+
+	// Nettoyage de la zone d'affichage on remplace tout par rien
 	public void clean()
 	{
 		textArea.setText("");
 	}
 
-}
+	// Fonction qui change l'état des bouttons
+	public void changeButton(boolean b)
+	{
+		deconnexion.setEnabled(b);
+		send.setEnabled(b);
+		fileInput.setEnabled(b);
+		wizz.setEnabled(b);
+	}
 
+	// Création d'un wizz
+	public void wizzz()
+	{
+		int originX = fenetre.getLocation().x;
+		int originY = fenetre.getLocation().y;
+		int x = fenetre.getLocation().x;
+		int y = fenetre.getLocation().y;
+		int a;
+		int b;
+		for(int i = 0; i < 20; i++)
+		{
+			Random randomGenerator = new Random();
+			a = randomGenerator.nextInt(10);
+			b = randomGenerator.nextInt(10);
+	
+			if(a % 2 == 0)
+			{				
+				a = a - 10;
+				b = b - 10;
+			}
+			
+			x = fenetre.getLocation().x;
+			 y = fenetre.getLocation().y;
+			fenetre.setLocation(x + a, y +b);
+			 try
+			 {
+			 sleep(25);
+			 }catch(InterruptedException e){}
+		}
+		fenetre.setLocation(originX, originY);
+		
+	}
+
+	// fonction qui envoie un msg avec parametre -> surchage
+	public void send(String data)
+	{
+		/* On recupere le flux de sortie pour envoyer un message 
+		 *  précis comme close ou wizzz
+		 */
+		try
+			{				
+				out = new PrintWriter(socketduserveur.getOutputStream());
+				out.println(data);
+				out.flush();
+			}catch(IOException e){}
+	}
+
+	
+	
+}
 
 void main()
 {
