@@ -12,8 +12,6 @@ import java.io.PrintWriter;
 import java.awt.image.*;
 import java.awt.*;
 import javax.imageio.ImageIO;
-import javax.imageio.ImageWriter;
-import javax.imageio.stream.*;
 import java.io.*;
 import javax.swing.*;
 import javax.swing.text.*;
@@ -45,7 +43,7 @@ public class Serveur extends Thread implements ActionListener, KeyListener, Wind
 	private JTextArea userText;
 	private OutputStream o;
 	private boolean isUserConnected = false;
-	private boolean socketOpen =false;
+	public boolean socketOpen =false;
 	private JOptionPane dialog = new JOptionPane();
 	
 	Serveur() {
@@ -87,10 +85,7 @@ public class Serveur extends Thread implements ActionListener, KeyListener, Wind
 		textArea.setEditable(false);
 		Font font = new Font("Serif", Font.ITALIC, 45);
 		textArea.setFont(font);
-		JScrollPane scroll = new JScrollPane(textArea);	
-		// permet de rester en bas 	
-		 DefaultCaret caret = (DefaultCaret)textArea.getCaret();
-		 caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
+		JScrollPane scroll = new JScrollPane(textArea);
 		//------- Création de l'entrée utilisateur ---
 		JPanel userIN = new JPanel();
 		userIN.setLayout(new GridBagLayout());
@@ -127,7 +122,7 @@ public class Serveur extends Thread implements ActionListener, KeyListener, Wind
 		gbcUser.gridy = 1;
 		gbcUser.gridx = 0;
 		gbcUser.weightx = 1.0;	
-		gbcUser.gridwidth = 5;
+		gbcUser.gridwidth = 6;
 		userIN.add(userText, gbcUser);	
 		//------ Ajout des panels sur le layout principal -----
 		// header
@@ -200,7 +195,8 @@ public class Serveur extends Thread implements ActionListener, KeyListener, Wind
 						doc = (HTMLDocument) textArea.getStyledDocument();
 						String data = "<img src=\"file:///"+outputfile.getAbsolutePath()+"\" alt='erreur'><br />";
 						write(userHeader+ "<br />");
-						write(data);											
+						write(data);
+											
 					}
 					// si on recoit un wizz
 					else if(msg.equals("messagequifaitbougerlecran"))
@@ -264,7 +260,7 @@ public class Serveur extends Thread implements ActionListener, KeyListener, Wind
 						String authorized[] = {".png", ".jpg", ".jpeg", ".gif"};
 						if(Arrays.asList(authorized).contains(ext))
 						{
-							println(ext);
+							sendImage(file);
 						}
 						else
 						displayDial("Extension non autorisée", "png, jpg, jpeg ou gif uniquement",JOptionPane.WARNING_MESSAGE); 
@@ -324,6 +320,7 @@ public class Serveur extends Thread implements ActionListener, KeyListener, Wind
 			BufferedImage image = ImageIO.read(file);
 			// on écrit notre buffer sur le flux sortant
 			ImageIO.write(image , "PNG", o);
+			println("image writed");
 			/* Affichage de l'image dans notre propre zone d'affichage.
 			 *  la zone d'affichage accepete le HTML cela nous permet d'utiliser
 			 *  les balises de ce langage pour mettre en forme nos données
@@ -341,7 +338,7 @@ public class Serveur extends Thread implements ActionListener, KeyListener, Wind
 			out.println(""); // ajout de l'eof (\r\n)
 			//on "envoie" le flux sortant
 			out.flush();
-		}catch(IOException e){}
+		}catch(IOException e){println("e");}
 	}
 
 	// Fonction de déconnexion
@@ -451,10 +448,12 @@ public class Serveur extends Thread implements ActionListener, KeyListener, Wind
 		 if(socketOpen && isUserConnected)
 		 {
 		 	deconnexion();
+		 	println("socket and user");
 		 	try
 			{
 				socketserver.close();
 			}catch(IOException serv){};
+			println("ok");
 		 }
 		 else if(socketOpen)
 		 {
@@ -463,8 +462,7 @@ public class Serveur extends Thread implements ActionListener, KeyListener, Wind
 				socketserver.close();
 			}catch(IOException serv){};
 			println("seul");
-		 }
-		 
+		 }		 
 	}
 
 	// Nettoyage de la zone d'affichage on remplace tout par rien
@@ -526,21 +524,19 @@ public class Serveur extends Thread implements ActionListener, KeyListener, Wind
 			out = new PrintWriter(socketduserveur.getOutputStream());
 			out.println(data);
 			out.flush();
-			}catch(IOException e){}
+		}catch(IOException e){}
 	}
 
 	// Affichage de boite de dialog
 	public void displayDial(String titre, String message, int kind)
 	{
 		dialog.showMessageDialog(null,message , titre, kind);
-	}
-
-	
-	
+	}	
 }
 
 void main()
 {
-	Serveur a = new Serveur();
-	a.start();
+	Serveur serv = new Serveur();
+	if(serv.socketOpen)
+		serv.start();		
 }

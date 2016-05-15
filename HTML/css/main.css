@@ -1,0 +1,171 @@
+@font-face 
+{
+	src: url("../fonts/mono.ttf");
+	font-family: Mono;
+}
+
+@font-face 
+{
+	src: url("../fonts/HACKED.ttf");
+	font-family: HACKED;
+}
+
+
+html {
+	height: 100%;
+}
+
+body {
+    margin: 0px;
+    padding: 0px;
+    background-color: #1a1a1a;
+    font-family: verdana;
+    height: 100%;
+}
+
+p
+{
+	font-family: Mono;
+	margin: 0px;
+}
+
+.row 
+{
+    margin: 0px;
+    padding: 0px;
+}
+
+#global
+{
+	background-color: #F8F8F8;
+    min-height: 100%;
+    border-left: 2px solid #585858;
+    border-right: 2px solid #585858;
+    padding: 0px;
+    padding-bottom: 25px;
+}
+
+/* header */
+
+header 
+{
+	font-family: HACKED;
+	padding: 10px 0px;
+	text-align: center;
+}
+
+header h1
+{
+	margin: 0px;
+	font-size: 5em;
+}
+
+header p
+{
+	margin: 0px;
+	font-size: 1.3em;
+	float: left;
+	padding-left: 10px;
+	padding-bottom: 10px;
+}
+
+
+/* Barre de navigation */
+
+nav ul
+{
+	display: inline-block;
+	background: #1a1a1a;
+	padding: 0px;
+	width: 100%;
+}
+
+nav ul li
+{
+	display: inline-block;
+	padding: 10px;
+	text-align: center;
+	color: rgb(255, 255, 255);
+}
+
+nav ul li:hover
+{
+	border-bottom: 2px solid #fff;
+}
+
+nav ul li.actual
+{
+	border-bottom: 2px solid DodgerBlue;
+}
+
+/* 	Structure */
+
+#block
+{
+	padding: 10px;
+	margin-top: 5px;
+	border-bottom: 1px solid #1a1a1a;
+}
+
+#block h1
+{
+	font-family: verdana;
+	margin: 0px;	
+	font-size: 1.8em;
+}
+
+#block h2
+{
+	font-family: verdana;
+	margin: 15px 0px 2px 0px;
+	font-size: 1.3em;
+}
+
+#block p
+{
+	font-size: 1.2em;
+	padding: 5px;
+}
+
+
+/* Présentation projet */
+
+div.table
+{
+	text-align: center;
+	width: 100%;
+	padding: 10px;
+}
+
+table
+{
+	border-collapse: collapse;
+	margin: 0 auto;
+}
+
+td, th
+{
+	border: 1px solid #1a1a1a;
+	padding: 10px;
+}
+
+/* Présentation logiciel */
+
+p.image
+{	
+	text-align: center;
+	margin: 5px;
+}
+
+/* Présentation du code */
+pre.code 
+{
+	background-color: #E2E2E2;
+	padding: 5px;
+	border: 1px solid #AAAAAA;
+	font-family: verdana;
+	font-size: 1em !important;
+	color: black;
+	border-radius: 5px;
+}
+

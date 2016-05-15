@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Projet ISN - 2016</title>
+	<meta charset="UTF-8" />
+	<script src="https://use.fontawesome.com/14a8c97e64.js"></script>
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+	<link rel="stylesheet" type="text/css" href="css/main.css">
+</head>
+	<body>
+
+		<div id="global" class="col-lg-offset-2 col-lg-8">
+
+			<header>
+				<div class="head">
+					<h1>Messagerie Reseau javascool</h1>
+					<p>Vianney Fargere, Lucas Gaste, Francois Morelle</p>
+				</div>
+			</header>
+
+			<nav>
+				<ul><!--
+				!--><a href="index.html"><li class="actual"><i class="fa fa-info-circle" aria-hidden="true"></i> Présentation du projet</li></a><!--
+				!--><a href="logiciel.html"><li><i class="fa fa-star" aria-hidden="true"></i> Présentation du logiciel</li></a><!--
+				!--><a href="code.html"><li><i class="fa fa-code" aria-hidden="true"></i> Présentation du code</li></a><!--
+			!--></ul>
+			</nav>
+
+			<div id="block">
+				<div>
+					<h1>Pourquoi travailler sur une messagerie réseau ?</h1>
+					<p>
+						Nous savions tout les 3 que nous ne voulions pas créer un jeux, cela ne nous interesse pas. On cherche plutôt quelque chose d'utile et qui utiliserai internet.<br /><br />
+						Dans un premier temps on a pensé à créer un outils qui récupérer les informations de spots de surf (houle, période, vent, température) et qui conseillerai à l'utilisateur un certaine type de planche, épaisseur de combinaison en fonction des données recues. On a abandonné ce projet car les API qui permettaient de recevoir les informations étaient toutes payantes.<br /> <br />
+
+						L'idée de la messagerie nous est venue un peu plus tard.
+					</p>
+				</div>
+			</div>
+
+			<div id="block">
+				<div>
+					<h1>Quels éléments intégrer dans notre projet ?</h1>
+					<p>
+						Dans un premier temps notre but principal était d'envoyer des messages poste à poste ce que nous avons fait très vite. Le projet était alors simple et basique. <br /><br />On a alors eu l'idée d'essayer d'envoyer des images comme un simple transfert de fichier. Ceci fait on s'est mis d'accord sur le fait d'également les afficher sur la zone d'affichage des messages. <br /> <br />Une fois tout cela fait on a voulu intégrer une option marrante sur notre projet. Au début des messages cachés qui provoquaient des sons, des mots interdits mais on a uniquement retenue l'idée du wizz.
+					</p>
+					<p class="image">
+						<img height="300px" src="image/wizz.gif" alt="wizz gif" />
+					</p>
+				</div>
+			</div>
+
+			<div id="block">
+				<div >
+					<h1>La répartition du travail</h1>
+					<div class="table">
+						<table>
+							<tr>
+								<th style="border: none;"></th>
+								<th>Javascool</th>
+								<th>HTML</th>
+								<th>CSS</th>
+								<th>Management</th>
+							</tr>
+							<tr>
+								<td>Vianney</td>
+								<td>Interface graphique des fenêtres, aide à l'algorithmique des classes.</td>
+								<td></td>
+								<td rowspan="3">Ecriture du CSS</td>
+								<td></td>
+							</tr>
+							<tr>
+								<td>François</td>
+								<td>Ecriture d'une ou deux fonctions</td>
+								<td></td>
+								<td>Responsable du cahier des charges</td>
+							</tr>
+							<tr>
+								<td>Lucas</td>
+								<td>Ecriture de la classe Serveur et en partie la classe client</td>
+								<td>Structure du site en HTML intégration de bootstrap</td>
+								<td></td>
+							</tr>
+						</table>
+					</div>
+				</div>
+			</div>
+
+			<div style="border: none;" id="block">
+				<div>
+					<h1>Les problèmes rencontrés</h1>
+					<h2>1. L'envoie de multiple messages</h2>
+					<p>
+						Nous avons rencontrés plusieurs problèmes particulièrement lors de l'écriture du javascool. 
+						Au début nous ne pouvions pas envoyer plusieurs messages à la suite. C'est à dire qu'il fallait attendre que l'autre personne réponde pour pouvoir envoyer un autre message.
+					</p>
+					<pre class="code">while(true)
+{
+	String msg = readString("Votre message");
+	Socket.sendMessage(msg);
+	String msgRecu = Socket.getMessage();
+
+	if(msgRecu != null)
+	{
+		println(msgRecu);
+	}							
+}					</pre>
+					<p>
+						Il a donc fallut faire appel a une classe dérivant de Thread permettant de lancer une tache asynchrone et qui donc ne bloque pas le prorgamme. Cette fonction nommé run nous permettera de lancer une boucle qui attend un message et l'affiche.
+					</p>
+					<h2>2. L'envoie d'image</h2>
+					<p>
+						Avant que l'on décide d'envoyer des images on utilisait la classe Socket server (<a href="http://javascool.gforge.inria.fr/?page=api&api=./org/javascool/tools/socket/SocketServer.html">documentation ici</a>). Elle était capable de gérer la création et connexion de socket toute seule. Elle fournissait également des fonctions comme sendMessage(String msg) ou getMessage() qui nous facilitées la tache.<br ><br />
+						Cependant la classe ne gère pas l'envoie d'image et il était impossible de récupérer le flux sortant ou entrant pour pouvoir envoyer autre chose que du texte.
+					</p>
+					<p class="image">
+						<img src="image/bytes.png" alt="bytes" />
+					</p>
+					<p>
+						Pour envoyer des données binaires comme ci dessus (représentées sous forme hexadécimale) nous avons cessé d'utiliser la classe fourni par Javascool et avons utlisé la classe Socket et SocketServer fourni par Java. On a donc été obliger de réécrire toutes les fonctions.
+					</p>
+					<pre class="code">
+sendImage(File file)
+{
+	try
+	{
+		out = new PrintWriter(socketduserveur.getOutputStream());
+		out.println("IMG");
+		out.flush();
+		o = socketduserveur.getOutputStream();
+		BufferedImage image = ImageIO.read(file);
+		ImageIO.write(image , "PNG", o);
+		out.println(""); 
+		out.flush();
+
+	}
+	catch(IOException e){}
+}	
+					</pre>
+					<p>
+						Ce code est l'équivalent de la fonction sendMessage(String msg) mais il permet d'envoyer des données binaires / brutes.
+					</p>
+					<h2>3. Les déconnexions inattendues</h2>
+					<p>
+						On a du répondre au cas ou l'un des deux utilisateurs se déconnecter sans utiliser le bouton de déconnexion c'est à dire en cliquant sur la croix rouge. Si on ne le faisait pas la connexion ne serait pas fermée et la prochaine tentative de connexion aurait avorté. Idem si on ferme le client sans fermer le port ouvert on ne pourra pas l'utiliser ultérieurement, il sera indisponible pour d'autres programmes et cela est dangereux du coté sécurité.
+					</p>
+					<p class="image">
+						<img src="image/open_port.png" alt="netsat -a" />
+					</p>
+					<p>
+						Cette image nous montre plusieurs ports ouverts lors de l'utilisation du serveur qui n'ont pas été fermés.
+					</p>
+				</div>
+			</div>
+			
+		</div>
+
+	</body>
+</html>
+
+<!-- 
+	Crédits
+	http://bit.ly/WatchDogsFont 
+
+	Open source
+	-> fontawesome
+	-> bootstrap
+ -->
