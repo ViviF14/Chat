@@ -1,9 +1,13 @@
 
+
+
+
 // Import de packages
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.net.InetSocketAddress;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -20,9 +24,16 @@ import javax.swing.text.*;
 import javax.swing.text.html.*;
 import java.awt.event.*;
 import java.util.*;
+private JOptionPane dialog = new JOptionPane();
 
+
+/* Création de notre classe dérivant de la classe Thread
+ *  permettant de créer des taches qui s'executent de façon
+ *  asynchrone évitant de bloquer la fenetre principale.
+ */
 public class client extends Thread implements ActionListener, KeyListener, WindowListener  
 {
+	// déclaration de variable de classe 
 	public Socket socket;
 	private int port;
 	private String us;
@@ -49,16 +60,15 @@ public class client extends Thread implements ActionListener, KeyListener, Windo
 		// Mise en place de l'interface graphique
 		fenetre = new JFrame();
 		fenetre.setSize(600, 600);
-		fenetre.setResizable(false);
 		fenetre.setTitle("Client");
 		fenetre.setLocationRelativeTo(null);
 		fenetre.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
 		fenetre.getContentPane().setLayout(new BorderLayout());
 		getHost();	
-		//------- CrÃ©ation du header -------------------	
+		//------- Création du header -------------------	
 		JPanel content = new JPanel();		
 		content.setLayout(new GridBagLayout());	
-		// CrÃ©ations des widgets
+		// Créations des widgets
 		JLabel labelIP = new JLabel("Adrrese IP du serveur");
 		JLabel labelPort = new JLabel("Port du serveur");
 		jtfIP = new JTextField("localhost");
@@ -82,16 +92,16 @@ public class client extends Thread implements ActionListener, KeyListener, Windo
    		content.add(jtfPort, gbc);
    		gbc.gridx = 4;
 		content.add(connexion, gbc);
-		//-------- CrÃ©ation de l'affichage -----------
+		//-------- Création de l'affichage -----------
 		textArea = new JTextPane();
 		textArea.setContentType("text/html");
 		textArea.setEditable(false);
 		JScrollPane scroll = new JScrollPane(textArea);
-		//------- CrÃ©ation de l'entrÃ©e utilisateur ---
+		//------- Création de l'entrée utilisateur ---
 		JPanel userIN = new JPanel();
 		userIN.setLayout(new GridBagLayout());
-		// CrÃ©ation des widgets
-		deconnexion = new JButton("DÃ©connexion");
+		// Crétion des widgets
+		deconnexion = new JButton("Déconnexion");
 		deconnexion.addActionListener(this);
 		fileInput = new JButton("Envoyer une image");
 		fileInput.addActionListener(this);
@@ -123,24 +133,31 @@ public class client extends Thread implements ActionListener, KeyListener, Windo
 		gbcUser.gridy = 1;
 		gbcUser.gridx = 0;
 		gbcUser.weightx = 1.0;	
-		gbcUser.gridwidth = 5;
+		gbcUser.gridwidth = 6;
 		userIN.add(userText, gbcUser);		
-		
+		//------ Ajout des panels sur le layout principal -----
+		// header
 		fenetre.getContentPane().add(content, BorderLayout.NORTH);
+		// zone d'affichage
 		fenetre.getContentPane().add(scroll, BorderLayout.CENTER);
+		// entrée utilisateur
 		fenetre.getContentPane().add(userIN, BorderLayout.SOUTH);
+		// on active la fenetre et on désactive les boutons
 		fenetre.setVisible(true);
 		changeButton(false);
 
 	}
 
+	
+	// Fonction principale permettant d'afficher les msg reçus
 	public void run()
 	{
-		fenetre.addWindowListener(this);
 		String userIP = socket.getLocalAddress().toString();
 		String userPort = Integer.toString(socket.getPort());
-		String userHeader = "<font color='#FF0000' ><b>" + userIP+"</b></font> : ";
+		String userHeader = "<font color='#FF0000' ><b>" + userIP+"</b></font> : ";		
+		fenetre.addWindowListener(this);
 		
+		// on attend un message quelconque
 		while(true)
 		{
 
@@ -148,37 +165,52 @@ public class client extends Thread implements ActionListener, KeyListener, Windo
 			{
 				in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 				String msg = in.readLine();
+
+				// Si c'est un message de déconnexion
 				if(msg.equals("close"))
 				{
+					// appel de la fonction de déconnexion
 					deconnexion();
 				}
+				// Si c'est une image
 				else if(msg.equals("IMG"))
 				{
+					/* nous avons choisis de ne pas créer d'autres
+					 *  threads pour la réception d'image. Le programme 
+					 *  peut alors bloquer lors de la réception d'images
+					 *  volumineuses
+					 */
+
+					// On récupère le flux de données brutes et on stock dans une variable adaptée
 					BufferedImage image = ImageIO.read(socket.getInputStream());
+					// On ouvre un fichier qui va recevoir l'image
 					File outputfile = new File("image.png");
+					//on écrit dedans
 					ImageIO.write(image, "png", outputfile);
+					// On récupère ce qui reste dans le flux car il peut rester des débris non affichable
 					in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 					String trash = in.readLine();
-					doc = (HTMLDocument) textArea.getStyledDocument();
+					// on ajoute l'image 
 					String data = "<img src=\"file:///"+outputfile.getAbsolutePath()+"\" alt='erreur'><br />";
 					write(userHeader+ "<br />");
 					write(data);
 				}
+				// si on recoit un wizz
 				else if(msg.equals("messagequifaitbougerlecran"))
-					{
-						// Appel fonction wizzz
-						wizzz();
-					}
-				else
+				{
+					// Appel fonction wizzz
+					wizzz();
+				}
+				// Si c'est un simple message texte on l'affiche
+				else if(msg != null)
 				write(userHeader + msg + "<br />");
 			}
-		 	catch (IOException e)		 
-			{
-				e.printStackTrace();
-			}			
+		 	// On récupere les erreurs
+	 		catch (IOException e){}		
 		}	
-	}
-
+	}
+	
+	// Fonction qui change les bouttons
 	public void changeButton(boolean b)
 	{
 		deconnexion.setEnabled(b);
@@ -190,39 +222,44 @@ public class client extends Thread implements ActionListener, KeyListener, Windo
 	// Fonction qui envoie un msg au client
 	public void send()
 	{
+		// on récupere le texte de la zone d'entrée
 		String data =  userText.getText();
-		println(data);
 		try
 		{
 			out = new PrintWriter(socket.getOutputStream());
 			write("<b>"+us+"</b> : " + data+ "<br />\n");
+			// on envoie le message au client
 			out.println(data);
 			out.flush();
+			// on vide la zone de texte
 			userText.setText("");			
 		}
-		catch(IOException e)
-		{
-			println("erreur");
-		}		
+		catch(IOException e){}		
 	}
 
 	// Fonction qui permet la connexion au serveur
 	public void connexion()
 	{
-		String host = jtfIP.getText();
+		// On récupére l'hote
+		host = jtfIP.getText();
 		try
 		{
+			// On récupère le port et on vérifie qu'il est correcte
 			port = Integer.parseInt(jtfPort.getText());
 			if(port >= 0 && port < 65535 )
 			{
 				try
 				{
-					socket = new Socket(host, port);
+					//On essaie de se connecter 
+					socket = new Socket();
+					// timeout de 2 secondes
+					socket.connect(new InetSocketAddress(host, port), 2000);
+					// On est connecté
 					connected = true;	
-					deconnexion.setEnabled(true);
-					send.setEnabled(true);
-					fileInput.setEnabled(true);
+					changeButton(true);
 					connexion.setEnabled(false);
+					// Si c'est la première fois qu'on se connecte
+					// on lance run()
 					if(isFirstLaunch)
 					{
 						this.start();
@@ -230,65 +267,97 @@ public class client extends Thread implements ActionListener, KeyListener, Windo
 						changeButton(true);
 					}
 					
-					write("<b><i> ConnectÃ© Ã  " + host + ":"  + port +" <br /><br /></i></b>");
+					write("<b><i> Connecté à  " + host + ":"  + port +" <br /><br /></i></b>");
 				}
 				catch(IOException e)
-				{
-					println(e);
-					println("Erreur");
+				{
+					displayDial("Erreur", e.getMessage(),JOptionPane.WARNING_MESSAGE); 
 				}
 			}
 			else
 			{
-				println("Port doit etre entre 0 et 65535 -> " + Integer.toString(port) );
+				displayDial("Erreur", "Port doit etre entre 0 et 65535 ",JOptionPane.WARNING_MESSAGE);
 			}
 		}
-		catch(IllegalThreadStateException e)
-		{
-			println(e);
-		}
+		catch(IllegalThreadStateException e){}
 	}
 
-	// Fonction qui inscrit des donnÃ©es dans la zone
+	// Fonction qui inscrit des données dans la zone
 	public void write(String data)
 	{
-		HTMLDocument doc = (HTMLDocument) textArea.getStyledDocument();
+		// on récupere la zone d'affichage
+		doc = (HTMLDocument) textArea.getStyledDocument();
 		try
 		{
+			/* insertAfterEnd(int position, String data)
+			/* on récupere la taille des données déja présente
+			 *  pour écrire aprà¨s celle ci
+			 */	
 			doc.insertAfterEnd(doc.getCharacterElement(doc.getLength()), data+"\n");
 		}
-		catch(BadLocationException e){println(e);}
-		catch(IOException e){println(e);}
+		catch(BadLocationException e){}
+		catch(IOException e){}
 	}
 
 	// Fonction qui attend un click sur un boutton
 	public void actionPerformed(ActionEvent arg0)
 	{
+		// On regarde quel bouton a été clique
+		// ---- ici bouton pour envoyer une image ----
 		if(arg0.getActionCommand().equals("Envoyer une image"))
 		{
+			// On récupere l'image grace à une fonction java
 			JFileChooser fileChooser = new JFileChooser();
+			// si ça a marché
 			if (fileChooser.showOpenDialog(fileChooser) == JFileChooser.APPROVE_OPTION)
-			{
+			{	// on récuper l'image et on la passe en parametre à  une fonction 
+				// qui se charge de l'envoyer
 				File file = fileChooser.getSelectedFile();
-				sendImage(file);
+				// on récupère la taille du fichier qui est en octet donc on converti en mo
+				double fileSize = file.length()/1024/1024;
+				// Si la taille de l'image est inférieure ou égale à 2M
+				if(fileSize <= 2)
+				{
+					// Si le fichier comporte bien une extension
+					if(file.getName().lastIndexOf(".") > 0)
+					{
+						// Si l'extension est bien PNG
+						String ext = file.getName().substring(file.getName().lastIndexOf("."));
+						if(ext.equals(".png"))
+						{
+							sendImage(file);
+						}
+						else
+						displayDial("Extension non autorisée", "png uniquement",JOptionPane.WARNING_MESSAGE); 
+					}
+					else
+					displayDial("Extension non autorisée", "png uniquement",JOptionPane.WARNING_MESSAGE);
+				}	
+				else
+				displayDial("Fichier trop volumineux", "Maximum 2Mo",JOptionPane.WARNING_MESSAGE);
 			}
 		}
+		// ---- Si c'est le bouton d'envoie ----
 		else if(arg0.getActionCommand().equals("Envoyer"))
 		{
 			send();			
 		}
+		// ---- Si c'est le bouton de connexion ----
 		else if(arg0.getActionCommand().equals("Connexion"))
 		{
 			connexion();
 		}
-		else if(arg0.getActionCommand().equals("DÃ©connexion"))
+		// ---- Si c'est le bouton de déconnexion ----
+		else if(arg0.getActionCommand().equals("Déconnexion"))
 		{
 			deconnexion();
 		}
+		// ---- Si c'est le bouton de nettoyage ----
 		else if(arg0.getActionCommand().equals("Nettoyer"))
 		{
 			clean();
 		}
+		// ---- Si c'est le bouton de wizz ----
 		else if(arg0.getActionCommand().equals("Wizz"))
 		{
 			// Appel de la fonction wizz
@@ -300,72 +369,99 @@ public class client extends Thread implements ActionListener, KeyListener, Windo
 	public void send(String data)
 	{
 		/* On recupere le flux de sortie pour envoyer un message 
-		 *  prÃ©cis comme close ou wizzz
+		 *  précis comme close ou wizzz
 		 */
 		try
-			{				
-				out = new PrintWriter(socket.getOutputStream());
-				out.println(data);
-				out.flush();
-			}catch(IOException e){}
+		{				
+			out = new PrintWriter(socket.getOutputStream());
+			out.println(data);
+			out.flush();
+		}catch(IOException e){}
 	}
 
+	// fonction d'envoie d'image
 	public void sendImage(File file)
 	{
+		// Cette fonction est en deux parties 1) envoie 2) affichage.
+		
+		// On récupéer la zone d'affichage pour pouvoir afficher l'image plus tard
+
 		try
 		{
-			HTMLDocument doc = (HTMLDocument) textArea.getStyledDocument();
+			/* récupération du flux de sortie grace à  une méthode
+			* création d'une classe permettant de faire de 
+			* l'écriture sous forme de text
+			*/
 			out = new PrintWriter(socket.getOutputStream());
 			out.println("IMG");
+			// on envoie un msg IMG pour prévenir que le flux qui va arriver n'est
+			// pas du texte mais des bytes
 			out.flush();
+			//on utilise le flux sortie mais cette fois en brute
 			o = socket.getOutputStream();
+			// on récupére notre fichier dans un buffer spécifique aux image
 			BufferedImage image = ImageIO.read(file);
+			// on écrit notre buffer sur le flux sortant
 			ImageIO.write(image , "PNG", o);
 			o.flush();
+			/* Affichage de l'image dans notre propre zone d'affichage.
+			 *  la zone d'affichage accepete le HTML cela nous permet d'utiliser
+			 *  les balises de ce langage pour mettre en forme nos données
+			 */
+			// On crée une string contenant la balise HTML img
 			String img = "<img src=\"file:///"+file.getAbsolutePath()+"\" alt='erreur' /><br />";
 			write("<b>"+us+"</b> : <br />\n");
+			// On affiche l'image grâce à  une fonction write()
 			write(img);
-			out = new PrintWriter(socket.getOutputStream());
-			out.println("Nettoyage");
+			/* le flux de sortie reste en attente car ImageIO n'envoie pas de EOF (end of file)
+			 *  alors on envoie un message vide qui lui contient un EOF
+			 *  Si on ne le fait pas la connexion sera jamais fermée (toujours en attente car pas 
+			 *  de eof) 
+			 */	
+			out.println("");// ajout de l'eof (\r\n)
+			//on "envoie" le flux sortant
 			out.flush();
 			userText.setText("");	
 		}catch(IOException e){}
 	}
 
-	// Fonction de dÃ©connexion
+	// Fonction de déconnexion
 	public void deconnexion()
 	{
 		try
 		{
-			deconnexion.setEnabled(false);
-			send.setEnabled(false);
-			fileInput.setEnabled(false);
-			connexion.setEnabled(true);			
+			// On désactive les bouttons
+			changeButton(false);
+			connexion.setEnabled(true);
+			// On envoie un msg au serveur lui disant que la connexion va se fermer et on la ferme
 			send("close");
 			socket.close();
-			write("<b><i> DÃ©connectÃ©, la fenÃªtre va se fermer dans 2s ...<br /><br /></i></b>");
-			changeButton(false);
+			write("<b><i> Déconnecté<br /><br /></i></b>");
 		}catch(IOException e){}
 	}
 
-	// Fonctions qui rÃ©cuper les touches du clavier
-	public void keyReleased(KeyEvent e)
-	{
-	}
-
+	/* Fonction qui récuper les touches du clavier
+	 *  plusieurs sont disponible en fonction du 
+	 *  statut de la touche. Ici on s'interesse au 
+	 *  moment ou la touche est préssée
+	 */
+	public void keyReleased(KeyEvent e){}
+	public void keyTyped(KeyEvent e){}
 	public void keyPressed(KeyEvent e)
 	{
+		// On récupere l'id de la touche et on vérifie que 
+		// c'est bien la touche entrée	
 		if(e.getKeyCode() == KeyEvent.VK_ENTER)
 		{
 			send();
 		}
-	}
+	}
 
-	public void keyTyped(KeyEvent e)
-	{
-	}
-
-	// Fonctions qui surveille l'Ã©tat de la fenetre
+	/* Fonctions qui surveille l'état de la fenetre
+	 *  plusieurs sont disponibles mais on 
+	 *  s'interesse uniquement à  l'evenement
+	 *  de fermeture de fenetre
+	 */
 	public void windowActivated(java.awt.event.WindowEvent e) {}
 	public void windowClosed(java.awt.event.WindowEvent e) {}
 	public void windowClosing(java.awt.event.WindowEvent e) {deconnexion();}
@@ -385,27 +481,30 @@ public class client extends Thread implements ActionListener, KeyListener, Windo
 		
 	}
 
-	// Nettoyage de l'Ã©cran
+	// Nettoyage de l'écran
 	public void clean()
 	{
 		textArea.setText("");
 	}
 
-	// CrÃ©ation d'un wizz
+	// Création d'un wizz
 	public void wizzz()
 	{
+		// On garde la position de la fenetre en mémoire
 		int originX = fenetre.getLocation().x;
 		int originY = fenetre.getLocation().y;
-		int x = fenetre.getLocation().x;
-		int y = fenetre.getLocation().y;
+		int x = originX;
+		int y = originY;
 		int a;
 		int b;
 		for(int i = 0; i < 20; i++)
 		{
+			// On génére deux nombres aléatoires entre 0 et 10 a et b pour l'abscisse et l'ordonnée
 			Random randomGenerator = new Random();
 			a = randomGenerator.nextInt(10);
 			b = randomGenerator.nextInt(10);
 	
+			// Si a est paire la valeure sera négative
 			if(a % 2 == 0)
 			{				
 				a = a - 10;
@@ -413,15 +512,23 @@ public class client extends Thread implements ActionListener, KeyListener, Windo
 			}
 			
 			x = fenetre.getLocation().x;
-			 y = fenetre.getLocation().y;
+			y = fenetre.getLocation().y;
+			// On déplace la fenetre
 			fenetre.setLocation(x + a, y +b);
+			// On met une petite pause pour prolonger l'effet
 			 try
 			 {
-			 sleep(25);
+			 	sleep(25);
 			 }catch(InterruptedException e){}
 		}
-		fenetre.setLocation(originX, originY);
-		
+		// La boucle fini on repositionne la fentre
+		fenetre.setLocation(originX, originY);		
+	}
+
+	// Affichage de boite de dialogue
+	public void displayDial(String titre, String message, int kind)
+	{
+		dialog.showMessageDialog(null,message , titre, kind);
 	}
 }
 
