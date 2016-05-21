@@ -13,7 +13,7 @@
 			<header>
 				<div class="head">
 					<h1>Messagerie Reseau javascool</h1>
-					<p>Vianney Fargere, Lucas Gaste, Francois Morelle</p>
+					<p>Vianney Fargere, Lucas Gasté, Francois Morelle</p>
 				</div>
 			</header>
 
@@ -22,10 +22,11 @@
 				!--><a href="index.html"><li><i class="fa fa-info-circle" aria-hidden="true"></i> Présentation du projet</li></a><!--
 				!--><a href="logiciel.html"><li><i class="fa fa-star" aria-hidden="true"></i> Présentation du logiciel</li></a><!--
 				!--><a href="code.html"><li class="actual"><i class="fa fa-code" aria-hidden="true"></i> Présentation du code</li></a><!--
+				!--><a href="https://github.com/0x41434142/Chat"><li><i class="fa fa-github"></i> Notre projet sur Github</li></a><!--
 			!--></ul>
 			</nav>
 
-			<div id="block">
+			<div class="block">
 				<div>
 					<h1>La classe Serveur et  Client</h1>
 					<p>
@@ -57,7 +58,7 @@ void main()
 
 
 
-			<div id="block">
+			<div class="block">
 				<div>
 					<h1> Les packages et variables</h1>
 					<p>
@@ -76,11 +77,11 @@ void main()
 				</div>
 			</div>
 
-			<div id="block">
+			<div class="block">
 				<div>
 					<h1> Les fonctions</h1>
 					<p>
-						La classe Serveur est composée de 15 fonctions et Client de 13 fonctions. Elles se répartissent en 3 catégories :
+						La classe Serveur est composée de 15 fonctions et Client de 14 fonctions. Elles se répartissent en 3 catégories :
 					</p>
 					<ul>
 						<li>L'envoie et réception de données </li>
@@ -94,12 +95,12 @@ void main()
 				</div>
 			</div>
 
-			<div id="block">
+			<div style="border: none;" class="block">
 				<div>
 					<h1> Le déroulement des opérations</h1>
 					<h2>1. L'algorithme de la classe Serveur</h2>
 					<p>
-						Lors de l'instanciation de la classe serveur dans le void main le constructeur client() est appelé créant l'interface graphique, et méttant les boutons, la fenêtre sur "écoute" et appelant la fonction serveurInitialisation(). <br /><br />
+						Lors de l'instanciation de la classe serveur dans le void main le constructeur serveur() est appelé créant l'interface graphique, et méttant les boutons, la fenêtre sur "écoute" et appelant la fonction serveurInitialisation(). <br /><br />
 
 						Celle ci se charge d'ouvrir un port sur la machine si l'opération marche le serveur sera alors accessible à travers le client. On met ici le boolean socketOpen à true indiquant que le socket est bien ouvert et qu'il faudra le refermer. socketOpen étant à true la fonction run() est lancée.<br /> <br />
 
