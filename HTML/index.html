@@ -31,8 +31,8 @@
 				<div>
 					<h1>Pourquoi travailler sur une messagerie réseau ?</h1>
 					<p>
-						Nous savions tout les 3 que nous ne voulions pas créer un jeux, cela ne nous interesse pas. On cherche plutôt quelque chose d'utile et qui utiliserai internet.<br /><br />
-						Dans un premier temps on a pensé à créer un outils qui récupérer les informations de spots de surf (houle, période, vent, température) et qui conseillerai à l'utilisateur un certaine type de planche, épaisseur de combinaison en fonction des données recues. On a abandonné ce projet car les API qui permettaient de recevoir les informations étaient toutes payantes.<br /> <br />
+						Nous savions tous les 3 que nous ne voulions pas créer un jeux, cela ne nous interesse pas. On cherche plutôt quelque chose d'utile et qui utiliserait internet.<br /><br />
+						Dans un premier temps on a pensé à créer un outils qui récupère les informations de spots de surf (houle, période, vent, température) et qui conseillerait à l'utilisateur une certaine type de planche, épaisseur de combinaison en fonction des données reçues. On a abandonné ce projet car les API qui permettaient de recevoir les informations étaient toutes payantes.<br /> <br />
 
 						L'idée de la messagerie nous est venue un peu plus tard.
 					</p>
@@ -43,7 +43,7 @@
 				<div>
 					<h1>Quels éléments intégrer dans notre projet ?</h1>
 					<p>
-						Dans un premier temps notre but principal était d'envoyer des messages poste à poste ce que nous avons fait très vite. Le projet était alors simple et basique. <br /><br />On a alors eu l'idée d'essayer d'envoyer des images comme un simple transfert de fichier. Ceci fait on s'est mis d'accord sur le fait d'également les afficher sur la zone d'affichage des messages. <br /> <br />Une fois tout cela fait on a voulu intégrer une option marrante sur notre projet. Au début des messages cachés qui provoquaient des sons, des mots interdits mais on a uniquement retenue l'idée du wizz.
+						Dans un premier temps notre but principal était d'envoyer des messages poste à poste ce que nous avons fait très vite. Le projet était alors simple et basique. <br /><br />On a alors eu l'idée d'essayer d'envoyer des images comme un simple transfert de fichier. Ceci fait on s'est mis d'accord sur le fait d'également les afficher sur la zone d'affichage des messages. <br /> <br />Une fois tout cela fait on a voulu intégrer une option marrante sur notre projet. Au début, des messages cachés qui provoquaient des sons ou des mots interdits mais on a uniquement retenue l'idée du wizz.
 					</p>
 					<p class="image">
 						<img height="300px" src="image/wizz.gif" alt="wizz gif" />
@@ -65,7 +65,7 @@
 							</tr>
 							<tr>
 								<td>Vianney</td>
-								<td>Interface graphique des fenêtre, aide à l'algorithmique des classes.</td>
+								<td>Interface graphique des fenêtres, aide à l'algorithmique des classes.</td>
 								<td>Validation et vérification du code</td>
 								<td rowspan="3">Ecriture du CSS</td>
 								<td>Participation au cahier des charges</td>
@@ -78,7 +78,7 @@
 							</tr>
 							<tr>
 								<td>Lucas</td>
-								<td>Ecriture de la classe Serveur et en partie la classe client</td>
+								<td>Ecriture de la classe Serveur et en partie la classe Client</td>
 								<td>Structure du site en HTML intégration de bootstrap</td>
 								<td>Participation au cahier des charges</td>
 							</tr>
@@ -107,12 +107,12 @@
 	}							
 }					</pre>
 					<p>
-						Il a donc fallut faire appel a une classe dérivant de Thread permettant de lancer une tache asynchrone et qui donc ne bloque pas le prorgamme. Cette fonction nommé run nous permettera de lancer une boucle qui attend un message et l'affiche.
+						Il a donc fallut faire appel a une classe dérivant de Thread permettant de lancer une tache asynchrone et qui donc ne bloque pas le prorgamme. Cette fonction nommée run nous permettra de lancer une boucle qui attend un message et l'affiche.
 					</p>
 					<h2>2. L'envoie d'image</h2>
 					<p>
-						Avant que l'on décide d'envoyer des images on utilisait la classe Socket server (<a href="http://javascool.gforge.inria.fr/?page=api&api=./org/javascool/tools/socket/SocketServer.html">documentation ici</a>). Elle était capable de gérer la création et connexion de socket toute seule. Elle fournissait également des fonctions comme sendMessage(String msg) ou getMessage() qui nous facilitées la tache.<br ><br />
-						Cependant la classe ne gère pas l'envoie d'image et il était impossible de récupérer le flux sortant ou entrant pour pouvoir envoyer autre chose que du texte.
+						Avant que l'on décide d'envoyer des images on utilisait la classe Socket server (<a href="http://javascool.gforge.inria.fr/?page=api&api=./org/javascool/tools/socket/SocketServer.html">documentation ici</a>). Elle était capable de gérer la création et connexion de socket toute seule. Elle fournissait également des fonctions comme sendMessage(String msg) ou getMessage() qui nous facilitaient la tâche.<br ><br />
+						Cependant la classe ne gère pas l'envoie d'images et il était impossible de récupérer le flux sortant ou entrant pour pouvoir envoyer autre chose que du texte.
 					</p>
 					<p class="image">
 						<img src="image/bytes.png" alt="bytes" />
@@ -143,7 +143,7 @@ sendImage(File file)
 					</p>
 					<h2>3. Les déconnexions inattendues</h2>
 					<p>
-						On a du répondre au cas ou l'un des deux utilisateurs se déconnecter sans utiliser le bouton de déconnexion c'est à dire en cliquant sur la croix rouge. Si on ne le faisait pas la connexion ne serait pas fermée et la prochaine tentative de connexion aurait avorté. Idem si on ferme le client sans fermer le port ouvert on ne pourra pas l'utiliser ultérieurement, il sera indisponible pour d'autres programmes et cela est dangereux du coté sécurité.
+						On a du répondre au cas ou l'un des deux utilisateurs se déconnecterait sans utiliser le bouton de déconnexion c'est-à-dire en cliquant sur la croix rouge. Si on ne le faisait pas la connexion ne se serait pas fermée et la prochaine tentative de connexion aurait avorté. Idem si on ferme le client sans fermer le port ouvert on ne pourra pas l'utiliser ultérieurement, il sera indisponible pour d'autres programmes et cela est dangereux du coté sécurité.
 					</p>
 					<p class="image">
 						<img src="image/open_port.png" alt="netsat -a" />
