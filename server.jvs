@@ -50,7 +50,7 @@ public class Serveur extends Thread implements ActionListener, KeyListener, Wind
 	private JOptionPane dialog = new JOptionPane();
 	
 	Serveur() {
-		/* Mise en place de l'interface graphiqueg race à  la bibliotheque 
+		/* Mise en place de l'interface graphique grâce à  la bibliotheque 
 		 *  fournie nous permettant de créer des fenetres, d'y ajouter
 		 *  des widgets etc		 
 		 */
@@ -64,7 +64,7 @@ public class Serveur extends Thread implements ActionListener, KeyListener, Wind
 		JPanel content = new JPanel();		
 		content.setLayout(new GridBagLayout());	
 		// Créations des widgets
-		JLabel labelIP = new JLabel("Adrrese IP du serveur");
+		JLabel labelIP = new JLabel("Adresse IP du serveur");
 		getHost();
 		JLabel IP = new JLabel(host);
 		JLabel labelPort = new JLabel("Port du serveur");

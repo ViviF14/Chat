@@ -69,7 +69,7 @@ public class client extends Thread implements ActionListener, KeyListener, Windo
 		JPanel content = new JPanel();		
 		content.setLayout(new GridBagLayout());	
 		// Créations des widgets
-		JLabel labelIP = new JLabel("Adrrese IP du serveur");
+		JLabel labelIP = new JLabel("Adresse IP du serveur");
 		JLabel labelPort = new JLabel("Port du serveur");
 		jtfIP = new JTextField("localhost");
 		jtfPort = new JTextField("12000");
